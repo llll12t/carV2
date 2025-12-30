@@ -40,12 +40,18 @@ export default function LoginPage() {
   const { userProfile, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    console.log("LoginPage: Auth State Changed", { authLoading, hasProfile: !!userProfile, role: userProfile?.role });
+
     if (!authLoading && userProfile) {
+      console.log("LoginPage: User is logged in, attempting redirect...", userProfile);
+
       // Role-based redirection
       if (userProfile.role === 'admin' || userProfile.role === 'employee') {
+        console.log("LoginPage: Redirecting to /dashboard");
         router.replace('/dashboard');
       } else {
         // For drivers or other roles, redirect to their main page
+        console.log("LoginPage: Redirecting to /my-bookings");
         router.replace('/my-bookings');
       }
     }
