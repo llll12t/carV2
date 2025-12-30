@@ -40,7 +40,7 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
             )}
           </div>
           <div className="text-white">
-            <p className="font-semibold text-lg">{userProfile?.name || 'นายทดสอบการ'}</p>
+            <p className="font-semibold text-lg">{userProfile?.name || 'นายทดสอบ'}</p>
             <p className="text-sm text-teal-100">{userProfile?.position || 'พนักงาน'}</p>
           </div>
         </div>
@@ -54,26 +54,24 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
             router.push('/my-vehicle');
             if (typeof setActiveTab === 'function') setActiveTab('vehicle');
           }}
-          className={`flex-1 py-3 rounded-lg font-semibold transition-all shadow-sm border-0 focus:outline-none ${
-            activeTab === 'vehicle'
+          className={`flex-1 py-3 rounded-lg font-semibold transition-all shadow-sm border-0 focus:outline-none ${activeTab === 'vehicle'
               ? 'bg-teal-900 text-white ring-2 ring-teal-200/20'
               : 'bg-teal-500/40 text-teal-100 hover:bg-teal-500/70'
-          }`}
+            }`}
         >
-           รถของฉัน
+          รถของฉัน
         </button>
         <button
           onClick={() => {
             router.push('/my-trips');
             if (typeof setActiveTab === 'function') setActiveTab('trips');
           }}
-          className={`flex-1 py-3 rounded-lg font-semibold transition-all shadow-sm border-0 focus:outline-none ${
-            activeTab === 'trips'
+          className={`flex-1 py-3 rounded-lg font-semibold transition-all shadow-sm border-0 focus:outline-none ${activeTab === 'trips'
               ? 'bg-teal-900 text-white ring-2 ring-teal-200/20'
               : 'bg-teal-500/40 text-teal-100 hover:bg-teal-500/70'
-          }`}
+            }`}
         >
-           ประวัติ
+          ประวัติ
         </button>
       </div>
     </div>
