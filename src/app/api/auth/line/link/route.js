@@ -26,51 +26,12 @@ export async function POST(request) {
     const phoneSnapshot = await usersRef.where('phone', '==', phone).limit(1).get();
 
     if (phoneSnapshot.empty) {
-      // สร้างผู้ใช้ใหม่อัตโนมัติถ้าไม่พบในระบบ
-      console.log('No user found with phone:', phone, '- creating new user');
-
-      try {
-        const newUserData = {
-          phone: phone,
-          lineId: lineId,
-          role: 'driver', // กำหนด role เริ่มต้นเป็น driver สำหรับผู้ใช้ใหม่
-          name: lineDisplayName || null,
-          imageUrl: linePictureUrl || null, // ใช้รูปจาก LINE
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          linkedAt: admin.firestore.FieldValue.serverTimestamp(),
-          lastLogin: admin.firestore.FieldValue.serverTimestamp()
-        };
-
-        const newUserRef = await usersRef.add(newUserData);
-        const newUid = newUserRef.id;
-
-        // Create Firebase Auth user
-        await admin.auth().createUser({
-          uid: newUid,
-          phoneNumber: phone,
-          disabled: false
-        });
-
-        // Create custom token for new user
-        const customToken = await admin.auth().createCustomToken(newUid);
-
-        return NextResponse.json({
-          customToken,
-          userProfile: {
-            uid: newUid,
-            ...newUserData,
-            createdAt: new Date() // convert for JSON
-          },
-          message: 'Successfully created and linked new user'
-        });
-
-      } catch (error) {
-        console.error('Error creating new user:', error);
-        return NextResponse.json(
-          { error: 'Failed to create new user', details: error.message },
-          { status: 500 }
-        );
-      }
+      // ไม่พบเบอร์โทรในระบบ - ให้แจ้งเตือนแทนการสร้างใหม่
+      console.log('No user found with phone:', phone);
+      return NextResponse.json(
+        { error: 'ไม่พบเบอร์โทรนี้ในระบบ กรุณาตรวจสอบและลองใหม่ หรือติดต่อผู้ดูแลระบบ' },
+        { status: 404 }
+      );
     }
 
     const userDoc = phoneSnapshot.docs[0];
