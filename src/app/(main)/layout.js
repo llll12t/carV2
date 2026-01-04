@@ -46,7 +46,7 @@ export default function MainLayout({ children }) {
           <p className="text-xs text-gray-500 mb-4">
             กรุณาแคปหน้าจอนี้แจ้งผู้ดูแลระบบ หรือตรวจสอบ Console Log
           </p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 w-full"
           >
@@ -56,14 +56,11 @@ export default function MainLayout({ children }) {
       </div>
     );
   }
-  // -------------------------------------------------------
-
-
 
   // ... (โค้ดส่วน needsLink และ return ปกติ ด้านล่างเหมือนเดิม) ...
   if (needsLink) {
-     // ... (คงเดิม)
-     return (
+    // ... (คงเดิม)
+    return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
           <div className="mb-4">
@@ -77,27 +74,27 @@ export default function MainLayout({ children }) {
               เราไม่พบบัญชีพนักงานที่เชื่อมกับ LINE นี้ ({linkProfile?.displayName || ''})
             </p>
           </div>
-          
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               หมายเลขโทรศัพท์
             </label>
-            <input 
-              value={phoneInput} 
-              onChange={(e) => setPhoneInput(e.target.value)} 
-              placeholder="0812345678" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            <input
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value)}
+              placeholder="0812345678"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               type="tel"
             />
           </div>
-          
+
           {linkMessage && (
             <div className={`mb-4 p-3 rounded ${linkMessage.includes('สำเร็จ') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
               <p className="text-sm">{linkMessage}</p>
             </div>
           )}
-          
-          <button 
+
+          <button
             onClick={async () => {
               setLinking(true);
               setLinkMessage('');
@@ -108,13 +105,13 @@ export default function MainLayout({ children }) {
                 setLinkMessage(res.error || 'ไม่สามารถผูกบัญชีได้');
               }
               setLinking(false);
-            }} 
-            className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" 
+            }}
+            className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={linking || !phoneInput.trim()}
           >
             {linking ? 'กำลังผูกบัญชี...' : 'ผูกบัญชี'}
           </button>
-          
+
           <p className="text-xs text-gray-500 text-center mt-4">
             ถ้าคุณยังไม่ลงทะเบียนในระบบ โปรดติดต่อผู้ดูแล
           </p>

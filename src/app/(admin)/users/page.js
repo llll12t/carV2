@@ -20,17 +20,17 @@ function UserCard({ user, onDelete }) {
   };
 
   return (
-  <div className="p-4 bg-white rounded-lg shadow-sm flex items-center gap-4">
+    <div className="p-4 bg-white rounded-lg shadow-sm flex items-center gap-4">
       {/* avatar */}
       <div className="flex-shrink-0">
         {user.imageUrl ? (
-          <Image 
-            src={user.imageUrl} 
-            alt={user.name} 
-            width={56} 
-            height={56} 
-            className="w-14 h-14 rounded-full object-cover border" 
-            unoptimized 
+          <Image
+            src={user.imageUrl}
+            alt={user.name}
+            width={56}
+            height={56}
+            className="w-14 h-14 rounded-full object-cover border"
+            unoptimized
           />
         ) : (
           <div className="w-14 h-14 rounded-full bg-teal-600 text-white flex items-center justify-center font-semibold">{(user.name || user.email || 'U')[0]}</div>
@@ -96,24 +96,24 @@ export default function ManageUsersPage() {
   };
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-            ผู้ใช้งานในระบบ ({users.length} คน)
+          ผู้ใช้งานในระบบ ({users.length} คน)
         </h1>
-        <Link 
-            href="/users/add" 
-            className="px-4 py-2 font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+        <Link
+          href="/users/add"
+          className="px-4 py-2 font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
         >
           + เพิ่มผู้ใช้ใหม่
         </Link>
       </div>
       {loading && <p>กำลังโหลดข้อมูลผู้ใช้...</p>}
       {!loading && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Admins column */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Admin</h2>
+            <h2 className="text-xl font-semibold mb-4">ผู้ดูแลระบบ</h2>
             <div className="space-y-4">
               {users.filter(u => u.role === 'admin').map(user => (
                 <UserCard key={user.id} user={user} onDelete={handleDelete} />
@@ -123,19 +123,9 @@ export default function ManageUsersPage() {
 
           {/* Drivers column */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Driver</h2>
+            <h2 className="text-xl font-semibold mb-4">พนักงานขับ</h2>
             <div className="space-y-4">
-              {users.filter(u => u.role === 'driver').map(user => (
-                <UserCard key={user.id} user={user} onDelete={handleDelete} />
-              ))}
-            </div>
-          </div>
-
-          {/* Others column */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Other</h2>
-            <div className="space-y-4">
-              {users.filter(u => u.role !== 'admin' && u.role !== 'driver').map(user => (
+              {users.filter(u => u.role !== 'admin').map(user => (
                 <UserCard key={user.id} user={user} onDelete={handleDelete} />
               ))}
             </div>

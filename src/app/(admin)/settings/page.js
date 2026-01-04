@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { checkAllIndexes } from '@/lib/indexChecker';
 
 // --- Icons ---
 const Icons = {
@@ -60,6 +61,11 @@ export default function SettingsPage() {
 
   // State for testing report
   const [testingReport, setTestingReport] = useState(false);
+
+  // Index Checker State
+  const [checkingIndexes, setCheckingIndexes] = useState(false);
+  const [indexResults, setIndexResults] = useState([]);
+  const [showIndexModal, setShowIndexModal] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -379,8 +385,169 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Firestore Indexes */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+            <div className="p-4 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+              </svg>
+              <h2 className="font-semibold text-gray-800">Firestore Indexes</h2>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">ตรวจสอบและสร้าง Composite Indexes ที่จำเป็นสำหรับระบบ (สะดวกเมื่อย้าย Firebase Project)</p>
+              <button
+                onClick={async () => {
+                  setCheckingIndexes(true);
+                  try {
+                    const results = await checkAllIndexes();
+                    setIndexResults(results);
+                    setShowIndexModal(true);
+                  } catch (error) {
+                    console.error("Error checking indexes:", error);
+                    alert("เกิดข้อผิดพลาดในการตรวจสอบ Indexes");
+                  } finally {
+                    setCheckingIndexes(false);
+                  }
+                }}
+                disabled={checkingIndexes}
+                className="w-full py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {checkingIndexes ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    กำลังตรวจสอบ...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    ตรวจสอบ Firestore Indexes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Index Check Results Modal */}
+      {showIndexModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">ผลการตรวจสอบ Firestore Indexes</h3>
+                <button
+                  onClick={() => setShowIndexModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Icons.XMark className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {indexResults.filter(r => r.status === "missing").length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-800">Indexes พร้อมใช้งานแล้ว!</h4>
+                  <p className="text-gray-500 mt-2">ไม่พบ Index ที่ต้องสร้างเพิ่ม</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <p className="text-sm text-yellow-800 font-medium">
+                      ⚠️ พบ {indexResults.filter(r => r.status === "missing").length} Indexes ที่ต้องสร้าง
+                    </p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      กดลิงก์แต่ละรายการเพื่อเปิด Firebase Console และสร้าง Index
+                    </p>
+                  </div>
+
+                  {indexResults.filter(r => r.status === "missing").map((result, index) => (
+                    <div key={index} className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-gray-800">{result.queryName}</p>
+                          <p className="text-sm text-gray-500">Collection: {result.collection}</p>
+                          <p className="text-xs text-gray-400 mt-1">{result.description}</p>
+                        </div>
+                        {result.indexUrl ? (
+                          <a
+                            href={result.indexUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm whitespace-nowrap"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            สร้าง Index
+                          </a>
+                        ) : (
+                          <span className="px-3 py-1 bg-gray-200 text-gray-600 rounded-lg text-sm">
+                            ไม่พบ URL
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <p className="text-sm text-gray-700 font-medium">📋 วิธีใช้งาน:</p>
+                    <ol className="text-sm text-gray-600 mt-2 space-y-1 list-decimal list-inside">
+                      <li>กดปุ่ม "สร้าง Index" ของแต่ละรายการ</li>
+                      <li>จะเปิดหน้า Firebase Console</li>
+                      <li>กดปุ่ม "Create Index" ใน Firebase Console</li>
+                      <li>รอ 1-2 นาทีจนสร้างเสร็จ</li>
+                      <li>ทำซ้ำจนครบทุกรายการ</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {/* Show all results */}
+              <div className="mt-6">
+                <h4 className="font-medium text-gray-700 mb-3">รายการทั้งหมด:</h4>
+                <div className="space-y-2">
+                  {indexResults.map((result, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="text-sm text-gray-700">{result.queryName}</span>
+                        <span className="text-xs text-gray-400 ml-2">({result.collection})</span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${result.status === "ok"
+                          ? "bg-green-100 text-green-700"
+                          : result.status === "missing"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}>
+                        {result.status === "ok" ? "✓ พร้อม" : result.status === "missing" ? "✕ ต้องสร้าง" : "? ไม่ทราบ"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={() => setShowIndexModal(false)}
+                className="w-full py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

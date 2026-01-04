@@ -86,7 +86,12 @@ export default function useLiffAuth() {
       const resp = await fetch('/api/auth/line/link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lineId: linkProfile.lineId, phone }),
+        body: JSON.stringify({
+          lineId: linkProfile.lineId,
+          phone,
+          linePictureUrl: linkProfile.pictureUrl || null,
+          lineDisplayName: linkProfile.displayName || null
+        }),
       });
       const body = await resp.json();
       if (!resp.ok) {
