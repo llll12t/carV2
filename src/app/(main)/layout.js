@@ -37,21 +37,36 @@ export default function MainLayout({ children }) {
   // -------------------------------------------------------
   if (liffAuthError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-red-50 p-6">
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-sm w-full text-center">
-          <h3 className="text-lg font-bold text-red-600 mb-2">เกิดข้อผิดพลาด!</h3>
-          <div className="bg-gray-100 p-3 rounded text-sm font-mono text-left text-red-800 break-words mb-4">
-            {typeof liffAuthError === 'string' ? liffAuthError : JSON.stringify(liffAuthError)}
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-sm w-full text-center">
+          <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
           </div>
-          <p className="text-xs text-gray-500 mb-4">
-            กรุณาแคปหน้าจอนี้แจ้งผู้ดูแลระบบ หรือตรวจสอบ Console Log
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">ไม่สามารถเชื่อมต่อได้</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            {typeof liffAuthError === 'string' ? liffAuthError : 'กรุณาเข้าใช้งานผ่าน LINE App'}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 w-full"
-          >
-            ลองใหม่
-          </button>
+
+          <div className="space-y-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-4 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition"
+            >
+              ลองใหม่
+            </button>
+            <a
+              href="/"
+              className="block w-full px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition"
+            >
+              เข้าสู่ระบบด้วย Email
+            </a>
+          </div>
+
+          <p className="text-xs text-gray-400 mt-4">
+            สำหรับผู้ดูแลระบบ สามารถเข้าผ่านหน้า Login ได้
+          </p>
         </div>
       </div>
     );
