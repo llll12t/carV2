@@ -53,6 +53,16 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // Check if on localhost
+      const isLocalhost = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+      if (isLocalhost) {
+        setError('LINE Login ไม่รองรับบน localhost กรุณาใช้ Email/Password หรือทดสอบบน Production');
+        setLineLoading(false);
+        return;
+      }
+
       const liff = (await import('@line/liff')).default;
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
 
@@ -111,7 +121,15 @@ export default function LoginPage() {
 
     } catch (err) {
       console.error('LINE login error:', err);
-      setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE');
+
+      // Better error messages
+      if (err.message?.includes('invalid url') || err.message?.includes('redirect')) {
+        setError('LINE Login ไม่รองรับ URL นี้ กรุณาใช้ Email/Password');
+      } else if (err.message?.includes('init')) {
+        setError('ไม่สามารถเชื่อมต่อ LINE ได้ กรุณาลองใหม่');
+      } else {
+        setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE');
+      }
     } finally {
       setLineLoading(false);
     }
