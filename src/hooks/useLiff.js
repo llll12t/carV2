@@ -2,6 +2,20 @@
 
 import { useState, useEffect } from 'react';
 
+// Preload LIFF SDK at module level to reduce initial load time
+let liffPromise = null;
+const getLiff = () => {
+    if (!liffPromise) {
+        liffPromise = import('@line/liff').then(m => m.default);
+    }
+    return liffPromise;
+};
+
+// Start preloading immediately when this module is imported
+if (typeof window !== 'undefined') {
+    getLiff();
+}
+
 const useLiff = (liffId) => {
     const [liffObject, setLiffObject] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -10,6 +24,8 @@ const useLiff = (liffId) => {
     const [isInClient, setIsInClient] = useState(false);
 
     useEffect(() => {
+        const startTime = performance.now();
+
         const initializeLiff = async () => {
             if (!liffId) {
                 setError("LIFF ID is not provided.");
@@ -18,10 +34,14 @@ const useLiff = (liffId) => {
             }
 
             try {
-                const liff = (await import('@line/liff')).default;
+                // Use preloaded LIFF SDK
+                const liff = await getLiff();
+                console.log(`[LIFF] SDK loaded in ${Math.round(performance.now() - startTime)}ms`);
 
-                // Init LIFF first
+                // Init LIFF
+                const initStart = performance.now();
                 await liff.init({ liffId });
+                console.log(`[LIFF] init() completed in ${Math.round(performance.now() - initStart)}ms`);
 
                 // Check if we're in LIFF client (LINE app browser)
                 const inClient = liff.isInClient();
@@ -58,6 +78,7 @@ const useLiff = (liffId) => {
 
                 if (!liff.isLoggedIn()) {
                     // Need to login
+                    console.log('[LIFF] Not logged in, redirecting to LINE login...');
                     liff.login({
                         scope: 'profile openid chat_message.write'
                     });
@@ -65,6 +86,7 @@ const useLiff = (liffId) => {
                 }
 
                 // Logged in successfully
+                console.log(`[LIFF] Total initialization: ${Math.round(performance.now() - startTime)}ms`);
                 setLiffObject(liff);
                 setLoading(false);
 
@@ -94,3 +116,4 @@ const useLiff = (liffId) => {
 };
 
 export default useLiff;
+

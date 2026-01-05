@@ -32,9 +32,6 @@ export default function MainLayout({ children }) {
             </svg>
           </div>
 
-          {/* Text */}
-          <p className="text-sm text-gray-600 mb-4">กำลังโหลด...</p>
-
           {/* Progress Bar */}
           <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
             <div

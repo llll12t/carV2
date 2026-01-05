@@ -104,6 +104,13 @@ export default function LoginPage() {
         return;
       }
 
+      // Handle needsLink case - LINE user not found in system
+      if (data.needsLink) {
+        setError('ไม่พบบัญชีผู้ใช้ในระบบ กรุณาติดต่อผู้ดูแลระบบเพื่อเพิ่มบัญชี');
+        setLineLoading(false);
+        return;
+      }
+
       // Check role before signing in
       if (data.userProfile) {
         const role = data.userProfile.role;
@@ -113,6 +120,11 @@ export default function LoginPage() {
           setLineLoading(false);
           return;
         }
+      } else {
+        // No userProfile returned - something wrong
+        setError('ไม่พบข้อมูลผู้ใช้ กรุณาลองใหม่');
+        setLineLoading(false);
+        return;
       }
 
       // Sign in with custom token
