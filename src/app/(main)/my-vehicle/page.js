@@ -48,7 +48,7 @@ export default function MyVehiclePage() {
             if (!snapshot.empty) {
                 const usageDoc = snapshot.docs[0];
                 const usageData = { id: usageDoc.id, ...usageDoc.data() };
-                
+
                 if (usageData.startTime?.toDate) {
                     usageData.startTime = usageData.startTime.toDate().toISOString();
                 }
@@ -81,7 +81,7 @@ export default function MyVehiclePage() {
                         collection(db, 'expenses'),
                         where('usageId', '==', usageData.id)
                     );
-                    
+
                     unsubExpenses = onSnapshot(expensesQuery, (expSnapshot) => {
                         const expensesData = expSnapshot.docs.map(doc => {
                             const data = doc.data();
@@ -206,15 +206,38 @@ export default function MyVehiclePage() {
         }
     };
 
-    // [UX IMPROVEMENT] ใช้ SkeletonLoader แทนข้อความธรรมดา
+    // Loading Screen with Progress Bar
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50">
-                <MainHeader userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />
-                <div className="-mt-16 px-4">
-                   {/* แสดง Skeleton จาก component ที่มีอยู่ */}
-                   <SkeletonLoader />
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="w-full max-w-xs px-6 text-center">
+                    {/* Car Icon */}
+                    <div className="w-12 h-12 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-6 h-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                        </svg>
+                    </div>
+
+                    {/* Text */}
+                    <p className="text-sm text-gray-600 mb-4">กำลังโหลดข้อมูลรถ...</p>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-teal-500 rounded-full animate-loading-bar"></div>
+                    </div>
                 </div>
+
+                {/* Animation Style */}
+                <style jsx>{`
+                    @keyframes loading-bar {
+                        0% { width: 0%; margin-left: 0%; }
+                        50% { width: 60%; margin-left: 20%; }
+                        100% { width: 0%; margin-left: 100%; }
+                    }
+                    .animate-loading-bar {
+                        animation: loading-bar 1.5s ease-in-out infinite;
+                    }
+                `}</style>
             </div>
         );
     }
