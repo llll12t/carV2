@@ -72,11 +72,13 @@ export default function SettingsPage() {
       try {
         const res = await fetch('/api/notifications/settings');
         const data = await res.json();
-        setNotifSettings(data.roles || {});
 
-        if (data.dailyReport) {
-          setNotifSettings(prev => ({ ...prev, dailyReport: data.dailyReport }));
-        }
+        // โหลดค่าทั้งหมดรวมถึง userChatMessage
+        setNotifSettings({
+          ...(data.roles || {}),
+          dailyReport: data.dailyReport || {},
+          userChatMessage: data.userChatMessage || { vehicle_borrowed: true, vehicle_returned: true }
+        });
 
         setVehicleTypes(data.vehicleTypes || ['รถ SUV', 'รถเก๋ง', 'รถกระบะ', 'รถตู้', 'รถบรรทุก', 'มอเตอร์ไซค์', 'อื่นๆ']);
         setUsageLimits(data.usageLimits || { storageMB: 512, firestoreDocs: 10000 });
