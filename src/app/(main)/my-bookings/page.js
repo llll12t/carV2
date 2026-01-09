@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/context/UserContext";
 import { useData } from "@/context/DataContext";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
@@ -28,30 +28,30 @@ function BookingCard({ booking }) {
     const formatDate = (d) => {
         if (!d) return '-';
         if (d.seconds && typeof d.seconds === 'number') {
-            return new Date(d.seconds * 1000).toLocaleString('th-TH', { 
-                day: '2-digit', month: '2-digit', year: 'numeric', 
-                hour: '2-digit', minute: '2-digit' 
+            return new Date(d.seconds * 1000).toLocaleString('th-TH', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
             });
         }
-        if (d instanceof Date) return d.toLocaleString('th-TH', { 
-            day: '2-digit', month: '2-digit', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit' 
+        if (d instanceof Date) return d.toLocaleString('th-TH', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
         try {
             if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
                 const parts = d.split('-');
                 const localDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0);
-                return localDate.toLocaleString('th-TH', { 
-                    day: '2-digit', month: '2-digit', year: 'numeric', 
-                    hour: '2-digit', minute: '2-digit' 
+                return localDate.toLocaleString('th-TH', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
                 });
             }
             const parsed = new Date(d);
-            if (!isNaN(parsed)) return parsed.toLocaleString('th-TH', { 
-                day: '2-digit', month: '2-digit', year: 'numeric', 
-                hour: '2-digit', minute: '2-digit' 
+            if (!isNaN(parsed)) return parsed.toLocaleString('th-TH', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
             });
-        } catch (e) {}
+        } catch (e) { }
         return '-';
     };
 
@@ -102,9 +102,9 @@ function BookingCard({ booking }) {
                         <p className="text-sm text-gray-600">{vehicle?.brand} {vehicle?.model}</p>
                     </div>
                     {vehicle?.imageUrl && (
-                        <img 
-                            src={vehicle.imageUrl} 
-                            alt="vehicle" 
+                        <img
+                            src={vehicle.imageUrl}
+                            alt="vehicle"
                             className="w-20 h-20 object-cover rounded-lg"
                         />
                     )}
@@ -162,7 +162,7 @@ function BookingCard({ booking }) {
 }
 
 export default function MyBookingsPage() {
-    const { userProfile } = useAuth();
+    const { user } = useUser();
     const { bookings, loading, stats, lastFetch } = useData();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('bookings');
@@ -170,15 +170,15 @@ export default function MyBookingsPage() {
     // กรอง bookings ตามสถานะ
     const pendingBookings = bookings.filter(b => b.status === 'pending' || !b.status);
     const approvedBookings = bookings.filter(b => b.status === 'approved');
-    const otherBookings = bookings.filter(b => 
-        b.status !== 'pending' && 
-        b.status !== 'approved' && 
+    const otherBookings = bookings.filter(b =>
+        b.status !== 'pending' &&
+        b.status !== 'approved' &&
         b.status
     );
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <MainHeader userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />
+            <MainHeader userProfile={user} activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="px-4 py-6 -mt-16">
                 {/* Stats Cards */}

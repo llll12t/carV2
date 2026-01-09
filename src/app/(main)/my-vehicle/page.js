@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/context/UserContext";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot, query, collection, where, limit } from "firebase/firestore";
@@ -11,7 +11,7 @@ import { getImageUrl } from '@/lib/imageHelpers';
 import SkeletonLoader from "@/components/main/SkeletonLoader"; // Import Skeleton
 
 export default function MyVehiclePage() {
-    const { user, userProfile } = useAuth();
+    const { user } = useUser();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('vehicle');
     const [activeUsage, setActiveUsage] = useState(null);
@@ -25,7 +25,7 @@ export default function MyVehiclePage() {
 
     useEffect(() => {
         // รอ Auth โหลดเสร็จก่อน
-        if (!user && !userProfile) {
+        if (!user) {
             // ถ้า Auth ยังไม่มา ให้ loading ค้างไว้ก่อน หรือถ้าแน่ใจว่าไม่มี user แล้วค่อยปิด
             return;
         }
@@ -34,7 +34,7 @@ export default function MyVehiclePage() {
         let unsubVehicle = null;
         let unsubExpenses = null;
 
-        const userId = userProfile?.lineId || user?.uid;
+        const userId = user?.lineId;
 
         // 1. Realtime Listener สำหรับหา Active Usage
         const usageQuery = query(
@@ -113,7 +113,7 @@ export default function MyVehiclePage() {
             if (unsubVehicle) unsubVehicle();
             if (unsubExpenses) unsubExpenses();
         };
-    }, [user, userProfile]);
+    }, [user]);
 
     const handleReturnVehicle = async () => {
         if (!activeUsage) {
@@ -245,7 +245,7 @@ export default function MyVehiclePage() {
     if (!activeUsage) {
         return (
             <div className="min-h-screen bg-gray-50">
-                <MainHeader userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />
+                <MainHeader userProfile={user} activeTab={activeTab} setActiveTab={setActiveTab} />
                 <div className="px-6 py-2 -mt-16">
                     <div className="bg-white rounded-xl shadow-sm p-8 text-center">
                         <svg className="w-20 h-20 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,7 +267,7 @@ export default function MyVehiclePage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <MainHeader userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />
+            <MainHeader userProfile={user} activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="px-6 py-2 -mt-16">
                 {/* Vehicle Card */}

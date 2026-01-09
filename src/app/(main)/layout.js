@@ -1,27 +1,18 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { UserProvider, useUser } from "@/context/UserContext";
 import { DataProvider } from "@/context/DataContext";
-import useLiffAuth from '@/hooks/useLiffAuth';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import LiffQueryRouter from '@/components/main/LiffQueryRouter';
 
-export default function MainLayout({ children }) {
-  const { user, userProfile, loading: authLoading, setUserProfileFromAuth } = useAuth();
-  // ดึง error: liffAuthError ออกมาใช้งาน
-  const { loading: liffLoading, needsLink, linkProfile, linkByPhone, error: liffAuthError, userProfile: liffUserProfile } = useLiffAuth();
+function MainLayoutContent({ children }) {
+  const { user, loading, lineUserId, lineProfile } = useUser();
   const [phoneInput, setPhoneInput] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkMessage, setLinkMessage] = useState('');
 
-  useEffect(() => {
-    if (liffUserProfile && setUserProfileFromAuth) {
-      console.log('Setting userProfile from LIFF auth:', liffUserProfile);
-      setUserProfileFromAuth(liffUserProfile);
-    }
-  }, [liffUserProfile, setUserProfileFromAuth]);
-
-  if (liffLoading || authLoading) {
+  // Loading state
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-full max-w-xs px-6 text-center">
@@ -44,59 +35,53 @@ export default function MainLayout({ children }) {
         </div>
 
         <style jsx>{`
-          @keyframes loading-progress {
-            0% { width: 0%; margin-left: 0%; }
-            50% { width: 60%; margin-left: 20%; }
-            100% { width: 0%; margin-left: 100%; }
-          }
-        `}</style>
+                    @keyframes loading-progress {
+                        0% { width: 0%; margin-left: 0%; }
+                        50% { width: 60%; margin-left: 20%; }
+                        100% { width: 0%; margin-left: 100%; }
+                    }
+                `}</style>
       </div>
     );
   }
 
-  // -------------------------------------------------------
-  // [ส่วนที่เพิ่ม] ถ้ามี Error จาก LIFF/API ให้แสดงออกมาเลย
-  // -------------------------------------------------------
-  if (liffAuthError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-sm w-full text-center">
-          <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">ไม่สามารถเชื่อมต่อได้</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {typeof liffAuthError === 'string' ? liffAuthError : 'กรุณาเข้าใช้งานผ่าน LINE App'}
-          </p>
+  // User not found - needs to link account
+  if (lineUserId && !user) {
+    const handleLinkByPhone = async () => {
+      if (!phoneInput.trim() || !lineProfile) return;
 
-          <div className="space-y-2">
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full px-4 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition"
-            >
-              ลองใหม่
-            </button>
-            <a
-              href="/"
-              className="block w-full px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition"
-            >
-              เข้าสู่ระบบด้วย Email
-            </a>
-          </div>
+      setLinking(true);
+      setLinkMessage('');
 
-          <p className="text-xs text-gray-400 mt-4">
-            สำหรับผู้ดูแลระบบ สามารถเข้าผ่านหน้า Login ได้
-          </p>
-        </div>
-      </div>
-    );
-  }
+      try {
+        const resp = await fetch('/api/auth/line/link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lineId: lineUserId,
+            phone: phoneInput.trim(),
+            linePictureUrl: lineProfile.pictureUrl || null,
+            lineDisplayName: lineProfile.displayName || null
+          }),
+        });
 
-  // ... (โค้ดส่วน needsLink และ return ปกติ ด้านล่างเหมือนเดิม) ...
-  if (needsLink) {
-    // ... (คงเดิม)
+        const body = await resp.json();
+
+        if (resp.ok && (body.customToken || body.userProfile)) {
+          setLinkMessage('ผูกบัญชีสำเร็จ กำลังโหลดข้อมูล...');
+          // Reload to refresh user data
+          window.location.reload();
+        } else {
+          setLinkMessage(body.error || 'ไม่สามารถผูกบัญชีได้');
+        }
+      } catch (error) {
+        console.error('Link error:', error);
+        setLinkMessage('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+
+      setLinking(false);
+    };
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
@@ -108,7 +93,7 @@ export default function MainLayout({ children }) {
             </div>
             <h2 className="text-xl font-bold text-center mb-2">ผูกบัญชีด้วยหมายเลขโทรศัพท์</h2>
             <p className="text-sm text-gray-600 text-center mb-6">
-              เราไม่พบบัญชีพนักงานที่เชื่อมกับ LINE นี้ ({linkProfile?.displayName || ''})
+              เราไม่พบบัญชีพนักงานที่เชื่อมกับ LINE นี้ ({lineProfile?.displayName || ''})
             </p>
           </div>
 
@@ -132,17 +117,7 @@ export default function MainLayout({ children }) {
           )}
 
           <button
-            onClick={async () => {
-              setLinking(true);
-              setLinkMessage('');
-              const res = await linkByPhone(phoneInput.trim());
-              if (res.success) {
-                setLinkMessage('ผูกบัญชีสำเร็จ กำลังโหลดข้อมูล...');
-              } else {
-                setLinkMessage(res.error || 'ไม่สามารถผูกบัญชีได้');
-              }
-              setLinking(false);
-            }}
+            onClick={handleLinkByPhone}
             className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={linking || !phoneInput.trim()}
           >
@@ -157,9 +132,10 @@ export default function MainLayout({ children }) {
     );
   }
 
-  if (userProfile) {
+  // User found - render children with DataProvider
+  if (user) {
     return (
-      <DataProvider userId={userProfile.uid}>
+      <DataProvider userId={user.uid || user.id}>
         <div className="min-h-screen bg-gray-50">
           <LiffQueryRouter />
           {children}
@@ -168,6 +144,7 @@ export default function MainLayout({ children }) {
     );
   }
 
+  // Fallback loading
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center">
@@ -178,3 +155,10 @@ export default function MainLayout({ children }) {
   );
 }
 
+export default function MainLayout({ children }) {
+  return (
+    <UserProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
+    </UserProvider>
+  );
+}

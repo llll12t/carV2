@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/imageHelpers';
-import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/context/UserContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function VehicleSelectionPage() {
-  const { user, userProfile } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const [vehicles, setVehicles] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
@@ -52,8 +52,8 @@ export default function VehicleSelectionPage() {
 
   const handleStartUsing = async (e) => {
     e.preventDefault();
-    
-    if (!user || !(userProfile?.lineId || user.uid)) {
+
+    if (!user || !user.lineId) {
       setMessage("กรุณาเข้าสู่ระบบให้เรียบร้อย (userId)");
       return;
     }
@@ -71,8 +71,8 @@ export default function VehicleSelectionPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userProfile?.lineId || user.uid,
-          userName: userProfile?.name || userProfile?.displayName || user.displayName || 'ไม่ระบุชื่อ',
+          userId: user?.lineId,
+          userName: user?.name || user?.displayName || 'ไม่ระบุชื่อ',
           vehicleId: selectedVehicle,
           vehicleLicensePlate: selectedVehicleData?.licensePlate,
           // ไม่ต้องส่ง startMileage
@@ -90,7 +90,7 @@ export default function VehicleSelectionPage() {
       }
 
       setMessage("เริ่มใช้งานรถสำเร็จ!");
-      
+
       // Reset form
       setSelectedVehicle("");
       setDestination("");
@@ -101,7 +101,7 @@ export default function VehicleSelectionPage() {
       setTimeout(() => {
         router.push('/my-vehicle');
       }, 1000);
-      
+
     } catch (error) {
       console.error("Error starting vehicle usage:", error);
       setMessage("เกิดข้อผิดพลาดในการเริ่มใช้งานรถ");
@@ -123,7 +123,7 @@ export default function VehicleSelectionPage() {
       <div className="px-6 -mt-16">
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <form onSubmit={handleStartUsing} className="p-6 space-y-4">
-            
+
             {/* เลือกรถ */}
             <div>
               <label className="block text-sm font-medium text-teal-700 mb-1">
@@ -176,9 +176,9 @@ export default function VehicleSelectionPage() {
                       <button
                         key={v.id}
                         type="button"
-                        onClick={() => { 
-                          setSelectedVehicle(v.id); 
-                          setIsOpen(false); 
+                        onClick={() => {
+                          setSelectedVehicle(v.id);
+                          setIsOpen(false);
                         }}
                         className="w-full flex items-center gap-3 p-3 text-left hover:bg-teal-50 transition-colors"
                       >

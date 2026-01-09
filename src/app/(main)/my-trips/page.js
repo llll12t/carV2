@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useUser } from '@/context/UserContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import Image from 'next/image';
@@ -78,8 +78,8 @@ function UsageHistoryCard({ usage }) {
             <div className="p-2">
                 <div className="flex items-center gap-2 mb-1">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${usage.status === 'active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
                         }`}>
                         {usage.status === 'active' ? ' กำลังใช้งาน' : ' เสร็จสิ้น'}
                     </span>
@@ -139,7 +139,7 @@ function UsageHistoryCard({ usage }) {
 
 // Page Component - แสดงประวัติการใช้งานรถ
 export default function MyTripsPage() {
-    const { user, userProfile } = useAuth();
+    const { user } = useUser();
     const [usageHistory, setUsageHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('trips');
@@ -155,7 +155,7 @@ export default function MyTripsPage() {
             }
             const q = query(
                 collection(db, "vehicle-usage"),
-                where("userId", "==", userProfile?.lineId || user.uid),
+                where("userId", "==", user?.lineId),
                 orderBy("startTime", "desc")
             );
             const snapshot = await getDocs(q);
@@ -192,7 +192,7 @@ export default function MyTripsPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50">
-                <MainHeader userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />
+                <MainHeader userProfile={user} activeTab={activeTab} setActiveTab={setActiveTab} />
                 <div className="bg-white px-4 py-2 -mt-16">
                     <div className="text-center py-12">
                         <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
@@ -204,7 +204,7 @@ export default function MyTripsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <MainHeader userProfile={userProfile} activeTab={activeTab} setActiveTab={setActiveTab} />
+            <MainHeader userProfile={user} activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="bg-white px-6 py-2 -mt-16">
 
@@ -215,7 +215,7 @@ export default function MyTripsPage() {
                                 <UsageHistoryCard key={usage.id} usage={usage} />
                             ))}
                         </div>
-                        
+
                         {hasMore && (
                             <div className="text-center">
                                 <button
