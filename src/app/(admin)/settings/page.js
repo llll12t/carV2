@@ -124,6 +124,7 @@ export default function SettingsPage() {
           driver: notifSettings.driver,
           employee: notifSettings.employee
         },
+        userChatMessage: notifSettings.userChatMessage,
         dailyReport: notifSettings.dailyReport,
         vehicleTypes,
         usageLimits
@@ -187,79 +188,40 @@ export default function SettingsPage() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Admin */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icons.ShieldCheck className="w-4 h-4 text-indigo-500" />
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">ผู้ดูแลระบบ</h3>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <ToggleRow
-                    label="เมื่อมีการจองใหม่"
-                    checked={!!notifSettings.admin?.booking_created}
-                    onChange={e => setNotifSettings(s => ({ ...s, admin: { ...s.admin, booking_created: e.target.checked } }))}
-                  />
-                  <ToggleRow
-                    label="เมื่อมีการยืมรถ"
-                    checked={!!notifSettings.admin?.vehicle_borrowed}
-                    onChange={e => setNotifSettings(s => ({ ...s, admin: { ...s.admin, vehicle_borrowed: e.target.checked } }))}
-                  />
-                  <ToggleRow
-                    label="เมื่อมีการคืนรถ"
-                    checked={!!notifSettings.admin?.vehicle_returned}
-                    onChange={e => setNotifSettings(s => ({ ...s, admin: { ...s.admin, vehicle_returned: e.target.checked } }))}
-                  />
-                </div>
+              {/* Info Box */}
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  💡 เมื่อยืม/คืนรถ ผู้ใช้จะได้รับข้อความสรุปใน LINE Chat ตามการเปิด/ปิดด้านล่าง
+                </p>
               </div>
 
-              {/* Driver */}
+              {/* User Notification Settings */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Icons.User className="w-4 h-4 text-green-500" />
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">คนขับ</h3>
+                  <Icons.Bell className="w-4 h-4 text-teal-500" />
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">การแจ้งเตือนผู้ใช้</h3>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                   <ToggleRow
-                    label="เมื่อมีการจอง"
-                    checked={!!notifSettings.driver?.booking_created}
-                    onChange={e => setNotifSettings(s => ({ ...s, driver: { ...s.driver, booking_created: e.target.checked } }))}
+                    label="แจ้งเตือนเมื่อยืมรถ"
+                    checked={!!notifSettings.userChatMessage?.vehicle_borrowed}
+                    onChange={e => setNotifSettings(s => ({
+                      ...s,
+                      userChatMessage: { ...s.userChatMessage, vehicle_borrowed: e.target.checked }
+                    }))}
                   />
                   <ToggleRow
-                    label="เมื่อยืมรถ"
-                    checked={!!notifSettings.driver?.vehicle_borrowed}
-                    onChange={e => setNotifSettings(s => ({ ...s, driver: { ...s.driver, vehicle_borrowed: e.target.checked } }))}
-                  />
-                  <ToggleRow
-                    label="เมื่อคืนรถ"
-                    checked={!!notifSettings.driver?.vehicle_returned}
-                    onChange={e => setNotifSettings(s => ({ ...s, driver: { ...s.driver, vehicle_returned: e.target.checked } }))}
+                    label="แจ้งเตือนเมื่อคืนรถ"
+                    checked={!!notifSettings.userChatMessage?.vehicle_returned}
+                    onChange={e => setNotifSettings(s => ({
+                      ...s,
+                      userChatMessage: { ...s.userChatMessage, vehicle_returned: e.target.checked }
+                    }))}
                   />
                 </div>
-              </div>
-
-              {/* Employee */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icons.Users className="w-4 h-4 text-blue-500" />
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">พนักงาน</h3>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <ToggleRow
-                    label="เมื่อมีการจอง"
-                    checked={!!notifSettings.employee?.booking_created}
-                    onChange={e => setNotifSettings(s => ({ ...s, employee: { ...s.employee, booking_created: e.target.checked } }))}
-                  />
-                  <ToggleRow
-                    label="เมื่อยืมรถ"
-                    checked={!!notifSettings.employee?.vehicle_borrowed}
-                    onChange={e => setNotifSettings(s => ({ ...s, employee: { ...s.employee, vehicle_borrowed: e.target.checked } }))}
-                  />
-                  <ToggleRow
-                    label="เมื่อคืนรถ"
-                    checked={!!notifSettings.employee?.vehicle_returned}
-                    onChange={e => setNotifSettings(s => ({ ...s, employee: { ...s.employee, vehicle_returned: e.target.checked } }))}
-                  />
-                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  เมื่อเปิด ผู้ใช้จะได้รับข้อความ Flex Message ใน LINE Chat ของตัวเอง
+                </p>
               </div>
             </div>
           </div>
@@ -524,10 +486,10 @@ export default function SettingsPage() {
                         <span className="text-xs text-gray-400 ml-2">({result.collection})</span>
                       </div>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${result.status === "ok"
-                          ? "bg-green-100 text-green-700"
-                          : result.status === "missing"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-700"
+                        ? "bg-green-100 text-green-700"
+                        : result.status === "missing"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-700"
                         }`}>
                         {result.status === "ok" ? "✓ พร้อม" : result.status === "missing" ? "✕ ต้องสร้าง" : "? ไม่ทราบ"}
                       </span>

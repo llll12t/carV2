@@ -91,6 +91,86 @@ export default function VehicleSelectionPage() {
 
       setMessage("เริ่มใช้งานรถสำเร็จ!");
 
+      // ส่งข้อความ LINE Flex Message จาก user (ตรวจสอบ settings ก่อน)
+      try {
+        // ดึง settings ก่อน
+        const settingsRes = await fetch('/api/notifications/settings');
+        const settingsData = await settingsRes.json();
+        const userChatEnabled = settingsData?.userChatMessage?.vehicle_borrowed !== false; // default true
+
+        if (userChatEnabled && typeof window !== 'undefined' && window.liff && window.liff.isInClient()) {
+          const now = new Date().toLocaleDateString('th-TH', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+          const vehicleData = vehicles.find(v => v.id === selectedVehicle);
+
+          await window.liff.sendMessages([{
+            type: 'flex',
+            altText: `เริ่มใช้รถ ${vehicleData?.licensePlate || ''}`,
+            contents: {
+              type: 'bubble',
+              size: 'kilo',
+              body: {
+                type: 'box',
+                layout: 'vertical',
+                contents: [
+                  { type: 'text', text: '🚗 เริ่มใช้รถสำเร็จ', weight: 'bold', size: 'md', color: '#0d9488' },
+                  { type: 'separator', margin: 'lg' },
+                  {
+                    type: 'box',
+                    layout: 'vertical',
+                    margin: 'lg',
+                    spacing: 'sm',
+                    contents: [
+                      {
+                        type: 'box',
+                        layout: 'horizontal',
+                        contents: [
+                          { type: 'text', text: 'ทะเบียน', size: 'sm', color: '#888888', flex: 2 },
+                          { type: 'text', text: vehicleData?.licensePlate || '-', size: 'sm', color: '#333333', flex: 3, align: 'end' }
+                        ]
+                      },
+                      {
+                        type: 'box',
+                        layout: 'horizontal',
+                        contents: [
+                          { type: 'text', text: 'รถ', size: 'sm', color: '#888888', flex: 2 },
+                          { type: 'text', text: `${vehicleData?.brand || ''} ${vehicleData?.model || ''}`.trim() || '-', size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
+                        ]
+                      },
+                      ...(destination ? [{
+                        type: 'box',
+                        layout: 'horizontal',
+                        contents: [
+                          { type: 'text', text: 'จุดหมาย', size: 'sm', color: '#888888', flex: 2 },
+                          { type: 'text', text: destination, size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
+                        ]
+                      }] : []),
+                      ...(purpose ? [{
+                        type: 'box',
+                        layout: 'horizontal',
+                        contents: [
+                          { type: 'text', text: 'วัตถุประสงค์', size: 'sm', color: '#888888', flex: 2 },
+                          { type: 'text', text: purpose, size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
+                        ]
+                      }] : [])
+                    ]
+                  },
+                  { type: 'separator', margin: 'lg' },
+                  { type: 'text', text: now, size: 'xs', color: '#AAAAAA', margin: 'lg', align: 'end' }
+                ],
+                paddingAll: '16px'
+              }
+            }
+          }]);
+          console.log('✅ LINE message sent successfully');
+        }
+      } catch (lineError) {
+        console.error('Failed to send LINE message:', lineError);
+        // ไม่ block flow ถ้าส่ง LINE ไม่สำเร็จ
+      }
+
       // Reset form
       setSelectedVehicle("");
       setDestination("");

@@ -8,10 +8,10 @@ const ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || process.env.NEXT_P
 
 function normalizeBooking(b) {
   if (!b) return null;
-  
+
   console.log('normalizeBooking - input totalExpenses:', b.totalExpenses, 'type:', typeof b.totalExpenses);
   console.log('normalizeBooking - input expenses:', b.expenses);
-  
+
   const normalized = {
     id: b.id || b.bookingId || b._id || '',
     requesterName: b.requesterName || b.requester || b.userName || '',
@@ -43,10 +43,10 @@ function normalizeBooking(b) {
     totalExpenses: typeof b.totalExpenses === 'number' ? b.totalExpenses : 0,
     expenses: Array.isArray(b.expenses) ? b.expenses : []
   };
-  
+
   console.log('normalizeBooking - output totalExpenses:', normalized.totalExpenses);
   console.log('normalizeBooking - output expenses:', normalized.expenses);
-  
+
   return normalized;
 }
 
@@ -87,10 +87,10 @@ export async function sendNotificationsForEvent(event, booking) {
   // the authoritative booking record and related expenses from Firestore
   // so notifications can include server-side timestamps, mileage and totals.
   let fullBooking = booking || {};
-  
+
   // Store original expenses and totalExpenses if provided (for vehicle_returned/vehicle_borrowed)
   const hasExpensesData = booking && (typeof booking.totalExpenses === 'number' || Array.isArray(booking.expenses));
-  
+
   try {
     if (booking && booking.id && !hasExpensesData) {
       const snap = await db.collection('bookings').doc(booking.id).get();
@@ -109,7 +109,7 @@ export async function sendNotificationsForEvent(event, booking) {
   } catch (e) {
     console.warn('Failed to load full booking record for notifications, proceeding with provided payload', e);
   }
-  
+
   console.log('sendNotificationsForEvent - fullBooking before normalize:', { totalExpenses: fullBooking.totalExpenses, expensesCount: fullBooking.expenses?.length });
 
   const b = normalizeBooking(fullBooking);
@@ -163,7 +163,7 @@ export async function sendNotificationsForEvent(event, booking) {
       // For booking_created: notify only admins + the requester
       const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
       recipientDocs.push(...adminSnaps.docs);
-      
+
       // Add the requester (person who created the booking)
       const requesterId = fullBooking.userId || fullBooking.requesterId;
       if (requesterId) {
@@ -174,33 +174,29 @@ export async function sendNotificationsForEvent(event, booking) {
           console.warn('Failed to fetch requester user for notifications', requesterId, e);
         }
       }
-    } else if (event === 'vehicle_borrowed') {
-      // For vehicle_borrowed: notify admins only (borrower will get direct notification)
-      const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
-      recipientDocs.push(...adminSnaps.docs);
-      
-      // Set templates for vehicle_borrowed using usage data
-      const usageDataBorrowed = b; // Use normalized booking data
-      console.log('vehicle_borrowed - usageData:', usageDataBorrowed);
-      templates.admin.vehicle_borrowed = vehicleBorrowedFlex(usageDataBorrowed);
-      templates.driver.vehicle_borrowed = vehicleBorrowedFlex(usageDataBorrowed);
-      templates.employee.vehicle_borrowed = vehicleBorrowedFlex(usageDataBorrowed);
-    } else if (event === 'vehicle_returned') {
-      // For vehicle_returned: notify admins only (returning user will get direct notification)
-      const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
-      recipientDocs.push(...adminSnaps.docs);
-      
-      // Set templates for vehicle_returned using usage data
-      const usageDataReturned = b; // Use normalized booking data
-      console.log('vehicle_returned - usageData:', usageDataReturned);
-      templates.admin.vehicle_returned = vehicleReturnedFlex(usageDataReturned);
-      templates.driver.vehicle_returned = vehicleReturnedFlex(usageDataReturned);
-      templates.employee.vehicle_returned = vehicleReturnedFlex(usageDataReturned);
+    } else if (event === 'vehicle_borrowed' || event === 'vehicle_returned') {
+      // ⚠️ ไม่ส่งแจ้งเตือนจาก Bot แล้ว เพราะ user ส่ง liff.sendMessages() เองที่ฝั่ง client
+      // ทำให้ไม่เกิดการแจ้งเตือนซ้ำซ้อน
+      console.log(`📤 Skipping Bot notification for ${event} - user sends via liff.sendMessages()`);
+
+      // Set templates anyway in case needed for other purposes
+      const usageData = b;
+      if (event === 'vehicle_borrowed') {
+        templates.admin.vehicle_borrowed = vehicleBorrowedFlex(usageData);
+        templates.driver.vehicle_borrowed = vehicleBorrowedFlex(usageData);
+      } else {
+        templates.admin.vehicle_returned = vehicleReturnedFlex(usageData);
+        templates.driver.vehicle_returned = vehicleReturnedFlex(usageData);
+      }
+
+      // ไม่เพิ่ม recipients - จะไม่มีการส่ง Bot notification
+      // recipientDocs ยังคงว่างเปล่า
+
     } else if (event === 'booking_approved' || event === 'booking_rejected') {
       // For approval/rejection: notify admins + the requester
       const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
       recipientDocs.push(...adminSnaps.docs);
-      
+
       const requesterId = fullBooking.userId || fullBooking.requesterId;
       if (requesterId) {
         try {
@@ -214,7 +210,7 @@ export async function sendNotificationsForEvent(event, booking) {
       // For vehicle_sent: notify admins + assigned driver + requester
       const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
       recipientDocs.push(...adminSnaps.docs);
-      
+
       // Add driver
       if (fullBooking && fullBooking.driverId) {
         try {
@@ -224,7 +220,7 @@ export async function sendNotificationsForEvent(event, booking) {
           console.warn('Failed to fetch driver user for notifications', fullBooking.driverId, e);
         }
       }
-      
+
       // Add requester
       const requesterId = fullBooking.userId || fullBooking.requesterId;
       if (requesterId) {
@@ -248,7 +244,7 @@ export async function sendNotificationsForEvent(event, booking) {
   // ส่งแจ้งเตือนไปหาผู้ใช้รถ/ผู้ยืมรถโดยตรงก่อน (ตรวจสอบ role settings)
   const directNotifyUserId = fullBooking?.userId;
   console.log(`🔍 Direct notification check: userId=${directNotifyUserId}, event=${event}`);
-  
+
   if (directNotifyUserId && (event === 'vehicle_borrowed' || event === 'vehicle_returned')) {
     console.log(`📤 Attempting direct notification to userId=${directNotifyUserId} for ${event}`);
     try {
@@ -256,7 +252,7 @@ export async function sendNotificationsForEvent(event, booking) {
       let userDoc = await db.collection('users').doc(directNotifyUserId).get();
       let userData = null;
       let userDocId = directNotifyUserId;
-      
+
       if (userDoc.exists) {
         userData = userDoc.data();
         console.log(`👤 Found user by document ID: ${directNotifyUserId}`);
@@ -271,28 +267,28 @@ export async function sendNotificationsForEvent(event, booking) {
           console.log(`👤 Found user by lineId: docId=${userDocId}, lineId=${directNotifyUserId}`);
         }
       }
-      
+
       if (userData) {
         const userLineId = userData?.lineId || directNotifyUserId; // fallback to directNotifyUserId if it's the LINE ID
         const userRole = userData?.role || 'driver';
-        
+
         console.log(`👤 User details: lineId=${userLineId}, role=${userRole}`);
-        
+
         // ตรวจสอบ settings ของ role นี้ว่าเปิดการแจ้งเตือนหรือไม่
         const roleSettings = (notifSettings.roles && notifSettings.roles[userRole]) || {};
         const enabled = typeof roleSettings[event] === 'boolean' ? roleSettings[event] : true;
-        
+
         console.log(`🔔 Notification enabled for role ${userRole}: ${enabled}`);
-        
+
         if (!enabled) {
           console.log(`⏭️ Skipping direct notification - ${userRole} has disabled ${event} notifications`);
           results.skipped.push({ uid: userDocId, reason: 'setting_disabled_direct', role: userRole });
         } else if (userLineId) {
           // ใช้ template ตาม role ของผู้ใช้ หรือ fallback เป็น driver
           const msgToSend = templates[userRole]?.[event] || templates.driver?.[event];
-          
+
           console.log(`📝 Message template exists: ${!!msgToSend}`);
-          
+
           if (msgToSend) {
             try {
               const messages = [{ type: 'flex', altText: msgToSend.altText || '', contents: msgToSend.contents }];
@@ -322,7 +318,7 @@ export async function sendNotificationsForEvent(event, booking) {
   const seen = new Set();
   // เพิ่ม userId ที่ส่งไปแล้วใน seen เพื่อไม่ส่งซ้ำ
   if (directNotifyUserId) seen.add(directNotifyUserId);
-  
+
   for (const doc of recipientDocs) {
     const ud = doc.data();
     const lineId = ud?.lineId;
@@ -369,7 +365,7 @@ export async function sendNotificationsForEvent(event, booking) {
     const alertAdmins = notifSettings.alertAdminOnIssues === true;
     if (alertAdmins && (issues.length > 0)) {
       // build a concise summary
-  const counts = { skipped: results.skipped.length, errors: results.errors.length, totalRecipients: recipientDocs.length };
+      const counts = { skipped: results.skipped.length, errors: results.errors.length, totalRecipients: recipientDocs.length };
       const topReasons = {};
       for (const it of issues) topReasons[it.reason] = (topReasons[it.reason] || 0) + 1;
       const reasonList = Object.entries(topReasons).map(([r, c]) => `${r}:${c}`).join(', ');
