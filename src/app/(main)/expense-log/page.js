@@ -423,10 +423,36 @@ export default function ExpenseLogPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
+        <div className="w-full max-w-xs px-6 text-center">
+          {/* Money Icon */}
+          <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">บันทึกค่าใช้จ่าย</h2>
+          <p className="text-sm text-gray-500 mb-6">กำลังโหลดข้อมูลรถ...</p>
+
+          {/* Progress Bar */}
+          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full"
+              style={{
+                animation: 'loading-progress 1.5s ease-in-out infinite'
+              }}
+            />
+          </div>
         </div>
+
+        <style jsx>{`
+          @keyframes loading-progress {
+            0% { width: 0%; margin-left: 0%; }
+            50% { width: 60%; margin-left: 20%; }
+            100% { width: 0%; margin-left: 100%; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -619,13 +645,13 @@ export default function ExpenseLogPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-scale-in">
             <div className={`p-6 rounded-t-2xl ${alertData.type === 'error' ? 'bg-red-50' :
-                alertData.type === 'success' ? 'bg-green-50' :
-                  'bg-blue-50'
+              alertData.type === 'success' ? 'bg-green-50' :
+                'bg-blue-50'
               }`}>
               <div className="flex items-center justify-center mb-3">
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center ${alertData.type === 'error' ? 'bg-red-100' :
-                    alertData.type === 'success' ? 'bg-green-100' :
-                      'bg-blue-100'
+                  alertData.type === 'success' ? 'bg-green-100' :
+                    'bg-blue-100'
                   }`}>
                   <span className="text-4xl">
                     {alertData.type === 'error' ? '❌' :
@@ -635,8 +661,8 @@ export default function ExpenseLogPage() {
                 </div>
               </div>
               <h3 className={`text-xl font-bold text-center mb-2 ${alertData.type === 'error' ? 'text-red-700' :
-                  alertData.type === 'success' ? 'text-green-700' :
-                    'text-blue-700'
+                alertData.type === 'success' ? 'text-green-700' :
+                  'text-blue-700'
                 }`}>
                 {alertData.title}
               </h3>
@@ -646,8 +672,8 @@ export default function ExpenseLogPage() {
               <button
                 onClick={() => setShowAlertModal(false)}
                 className={`w-full py-3 rounded-xl font-semibold text-white transition-all ${alertData.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
-                    alertData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                      'bg-blue-600 hover:bg-blue-700'
+                  alertData.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                    'bg-blue-600 hover:bg-blue-700'
                   }`}
               >
                 ตกลง
