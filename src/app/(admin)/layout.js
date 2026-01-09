@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// Layout หลักสำหรับหน้าจัดการทั้งหมด
-export default function AdminLayout({ children }) {
+// ต้องแยก content ออกมาเพราะต้องใช้ useAuth ภายใน AuthProvider
+function AdminLayoutContent({ children }) {
   const { loading, userProfile, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
@@ -63,5 +63,14 @@ export default function AdminLayout({ children }) {
         </div>
       </main>
     </div>
+  );
+}
+
+// Layout หลักสำหรับหน้าจัดการทั้งหมด - Wrap ด้วย AuthProvider
+export default function AdminLayout({ children }) {
+  return (
+    <AuthProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AuthProvider>
   );
 }
