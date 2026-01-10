@@ -112,13 +112,19 @@ export function UserProvider({ children }) {
                 const userDoc = snapshot.docs[0];
                 const userData = userDoc.data();
 
+                // ใช้รูปจาก LINE ถ้าไม่มีรูปในระบบ
+                const profileImage = userData.imageUrl || userData.photoURL || profile?.pictureUrl || '';
+
                 // Update user with LINE profile info
                 const userWithProfile = {
                     id: userDoc.id,
                     uid: userDoc.id,
                     ...userData,
-                    displayName: profile?.displayName || userData.displayName,
-                    pictureUrl: profile?.pictureUrl || userData.pictureUrl,
+                    displayName: userData.displayName || profile?.displayName,
+                    // ใช้รูปจากระบบก่อน ถ้าไม่มีใช้จาก LINE
+                    imageUrl: profileImage,
+                    photoURL: profileImage,
+                    pictureUrl: profileImage,
                 };
 
                 setUser(userWithProfile);

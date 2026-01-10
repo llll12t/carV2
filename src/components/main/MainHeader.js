@@ -25,9 +25,9 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
       <div className="flex items-center gap-3 mb-3">
         {/* Avatar */}
         <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 flex-shrink-0">
-          {userProfile?.imageUrl || userProfile?.photoURL ? (
+          {userProfile?.imageUrl || userProfile?.photoURL || userProfile?.pictureUrl ? (
             <Image
-              src={userProfile.imageUrl || userProfile.photoURL}
+              src={userProfile.imageUrl || userProfile.photoURL || userProfile.pictureUrl}
               alt={userProfile?.name || 'user'}
               width={36}
               height={36}
@@ -60,8 +60,8 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
             if (typeof setActiveTab === 'function') setActiveTab('vehicle');
           }}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'vehicle'
-              ? 'bg-white text-teal-700 shadow-sm'
-              : 'bg-white/10 text-white/80 hover:bg-white/20'
+            ? 'bg-white text-teal-700 shadow-sm'
+            : 'bg-white/10 text-white/80 hover:bg-white/20'
             }`}
         >
           รถของฉัน
@@ -72,8 +72,8 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
             if (typeof setActiveTab === 'function') setActiveTab('trips');
           }}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'trips'
-              ? 'bg-white text-teal-700 shadow-sm'
-              : 'bg-white/10 text-white/80 hover:bg-white/20'
+            ? 'bg-white text-teal-700 shadow-sm'
+            : 'bg-white/10 text-white/80 hover:bg-white/20'
             }`}
         >
           ประวัติ
