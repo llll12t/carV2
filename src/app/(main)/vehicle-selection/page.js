@@ -92,6 +92,89 @@ export default function VehicleSelectionPage() {
       // ตรวจสอบว่าต้องรออนุมัติหรือไม่
       if (result.approvalRequired) {
         setMessage("✅ ส่งคำขอใช้รถสำเร็จ! กรุณารอการอนุมัติจากแอดมิน");
+
+        // ส่ง Flex Message "รออนุมัติ"
+        try {
+          const settingsRes = await fetch('/api/notifications/settings');
+          const settingsData = await settingsRes.json();
+          const userChatEnabled = settingsData?.userChatMessage?.vehicle_borrowed !== false;
+
+          if (userChatEnabled && typeof window !== 'undefined' && window.liff && window.liff.isInClient()) {
+            const now = new Date().toLocaleDateString('th-TH', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+            const vehicleData = vehicles.find(v => v.id === selectedVehicle);
+
+            await window.liff.sendMessages([{
+              type: 'flex',
+              altText: `คำขอใช้รถ ${vehicleData?.licensePlate || ''} (รออนุมัติ)`,
+              contents: {
+                type: 'bubble',
+                size: 'kilo',
+                body: {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [
+                    { type: 'text', text: 'คำขอใช้รถ (รออนุมัติ)', weight: 'bold', size: 'md', color: '#f59e0b' },
+                    { type: 'separator', margin: 'lg' },
+                    {
+                      type: 'box',
+                      layout: 'vertical',
+                      margin: 'lg',
+                      spacing: 'sm',
+                      contents: [
+                        {
+                          type: 'box',
+                          layout: 'horizontal',
+                          contents: [
+                            { type: 'text', text: 'ทะเบียน', size: 'sm', color: '#888888', flex: 2 },
+                            { type: 'text', text: vehicleData?.licensePlate || '-', size: 'sm', color: '#333333', flex: 3, align: 'end' }
+                          ]
+                        },
+                        {
+                          type: 'box',
+                          layout: 'horizontal',
+                          contents: [
+                            { type: 'text', text: 'รถ', size: 'sm', color: '#888888', flex: 2 },
+                            { type: 'text', text: `${vehicleData?.brand || ''} ${vehicleData?.model || ''}`.trim() || '-', size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
+                          ]
+                        },
+                        ...(destination ? [{
+                          type: 'box',
+                          layout: 'horizontal',
+                          contents: [
+                            { type: 'text', text: 'จุดหมาย', size: 'sm', color: '#888888', flex: 2 },
+                            { type: 'text', text: destination, size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
+                          ]
+                        }] : []),
+                        ...(purpose ? [{
+                          type: 'box',
+                          layout: 'horizontal',
+                          contents: [
+                            { type: 'text', text: 'วัตถุประสงค์', size: 'sm', color: '#888888', flex: 2 },
+                            { type: 'text', text: purpose, size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
+                          ]
+                        }] : []),
+                        {
+                          type: 'box',
+                          layout: 'horizontal',
+                          contents: [
+                            { type: 'text', text: 'เวลา', size: 'sm', color: '#888888', flex: 2 },
+                            { type: 'text', text: now, size: 'sm', color: '#333333', flex: 3, align: 'end' }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }]);
+          }
+        } catch (err) {
+          console.error("Error sending Pending Approval Flex:", err);
+        }
+
         // หน่วงเวลา 2 วินาทีแล้วไปหน้า my-vehicle
         setTimeout(() => {
           router.push('/my-vehicle');
