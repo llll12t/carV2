@@ -24,18 +24,18 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
       {/* User Info Row */}
       <div className="flex items-center gap-3 mb-3">
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 flex-shrink-0">
+        <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white/25 flex-shrink-0">
           {userProfile?.imageUrl || userProfile?.photoURL || userProfile?.pictureUrl ? (
             <Image
               src={userProfile.imageUrl || userProfile.photoURL || userProfile.pictureUrl}
               alt={userProfile?.name || 'user'}
-              width={36}
-              height={36}
+              width={44}
+              height={44}
               className="w-full h-full object-cover"
               unoptimized
             />
           ) : (
-            <div className="bg-white/20 w-full h-full flex items-center justify-center text-white font-medium text-sm">
+            <div className="bg-white/20 w-full h-full flex items-center justify-center text-white font-semibold text-base">
               {userProfile?.name?.charAt(0) || 'U'}
             </div>
           )}
@@ -43,10 +43,10 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-white text-sm truncate leading-tight">
+          <p className="font-semibold text-white text-base truncate leading-tight">
             {userProfile?.name || 'ผู้ใช้งาน'}
           </p>
-          <p className="text-xs text-white/60 truncate">
+          <p className="text-sm text-white/70 truncate">
             {userProfile?.position || 'พนักงาน'}
           </p>
         </div>
@@ -59,9 +59,9 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
             router.push('/my-vehicle');
             if (typeof setActiveTab === 'function') setActiveTab('vehicle');
           }}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'vehicle'
+          className={`flex-1 py-2.5 rounded-lg text-base font-medium transition-all ${activeTab === 'vehicle'
             ? 'bg-white text-teal-700 shadow-sm'
-            : 'bg-white/10 text-white/80 hover:bg-white/20'
+            : 'bg-white/10 text-white/90 hover:bg-white/20'
             }`}
         >
           รถของฉัน
@@ -71,9 +71,9 @@ export default function MainHeader({ userProfile, activeTab, setActiveTab }) {
             router.push('/my-trips');
             if (typeof setActiveTab === 'function') setActiveTab('trips');
           }}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'trips'
+          className={`flex-1 py-2.5 rounded-lg text-base font-medium transition-all ${activeTab === 'trips'
             ? 'bg-white text-teal-700 shadow-sm'
-            : 'bg-white/10 text-white/80 hover:bg-white/20'
+            : 'bg-white/10 text-white/90 hover:bg-white/20'
             }`}
         >
           ประวัติ
