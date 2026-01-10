@@ -61,21 +61,21 @@ const Icons = {
 const getStatusConfig = (status) => {
   switch (status) {
     case "available":
-      return { label: "พร้อมใช้งาน", bg: "bg-green-50", text: "text-green-700", border: "border-green-200" };
+      return { label: "ว่าง", bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" };
     case "pending":
-      return { label: "รออนุมัติ", bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" };
+      return { label: "รออนุมัติ", bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-500" };
     case "in_use":
     case "in-use":
-      return { label: "กำลังใช้งาน", bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-200" };
+      return { label: "กำลังใช้", bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-500" };
     case "on_trip":
     case "on-trip":
-      return { label: "เดินทาง", bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" };
+      return { label: "เดินทาง", bg: "bg-indigo-100", text: "text-indigo-700", dot: "bg-indigo-500" };
     case "maintenance":
-      return { label: "ซ่อมบำรุง", bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
+      return { label: "ซ่อมบำรุง", bg: "bg-rose-100", text: "text-rose-700", dot: "bg-rose-500" };
     case "retired":
-      return { label: "ปลดระวาง", bg: "bg-gray-100", text: "text-gray-600", border: "border-gray-200" };
+      return { label: "เลิกใช้", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-500" };
     default:
-      return { label: status || "ไม่ระบุ", bg: "bg-gray-50", text: "text-gray-600", border: "border-gray-200" };
+      return { label: status || "-", bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400" };
   }
 };
 
@@ -83,89 +83,102 @@ const getStatusConfig = (status) => {
 
 function ActionButton({ href, icon: Icon, colorClass, label }) {
   return (
-    <Link href={href} className={`p-2 rounded-lg transition-colors ${colorClass} group relative`} title={label}>
-      <Icon className="w-4 h-4" />
-      <span className="sr-only">{label}</span>
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-1 group min-w-[50px]"
+    >
+      <div className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 group-hover:scale-110 shadow-sm group-hover:shadow-md border border-transparent ${colorClass}`}>
+        <Icon className="w-5 h-5 stroke-[1.5]" />
+      </div>
+      <span className="text-[10px] font-medium text-gray-500 group-hover:text-gray-900 leading-tight text-center">
+        {label}
+      </span>
     </Link>
   );
 }
 
 function VehicleTable({ vehicles }) {
   return (
-    <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50/50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ยานพาหนะ</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ผู้ขับขี่ / ใช้งาน</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ข้อมูลล่าสุด</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+    <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-100">
+        <thead>
+          <tr className="bg-gray-50/80">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">ยานพาหนะ</th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[10%]">สถานะ</th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[15%]">ผู้ใช้งาน</th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[15%]">ล่าสุด</th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">การจัดการ</th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white divide-y divide-gray-50">
           {vehicles.map((vehicle) => {
             const status = getStatusConfig(vehicle.status);
             return (
-              <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center">
-                    <div className="h-12 w-16 flex-shrink-0 relative rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+              <tr key={vehicle.id} className="group hover:bg-gray-50/80 transition-colors duration-150">
+                <td className="px-6 py-4 align-top">
+                  <div className="flex items-start gap-4">
+                    <div className="h-14 w-20 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm border border-gray-100">
                       {vehicle.imageUrl ? (
                         <Image src={vehicle.imageUrl} alt={vehicle.model} fill className="object-cover" unoptimized />
                       ) : (
-                        <div className="flex items-center justify-center h-full w-full text-gray-400">
-                          <Icons.Car className="w-6 h-6" />
+                        <div className="flex items-center justify-center h-full w-full text-gray-300">
+                          <Icons.Car className="w-8 h-8" />
                         </div>
                       )}
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{vehicle.brand} {vehicle.model}</div>
-                      <div className="text-xs text-gray-500 flex items-center gap-1">
-                        <Icons.Tag className="w-3 h-3" />
+                    <div>
+                      <div className="font-semibold text-gray-900">{vehicle.brand} {vehicle.model}</div>
+                      <div className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block mt-1">
                         {vehicle.licensePlate}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${status.bg} ${status.text} ${status.border}`}>
+                <td className="px-6 py-4 whitespace-nowrap align-top">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></span>
                     {status.label}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center text-sm text-gray-600">
-                    {vehicle.driver || vehicle.driverName ? (
-                      <>
-                        <Icons.User className="w-4 h-4 mr-1.5 text-gray-400" />
-                        {vehicle.driver?.displayName || vehicle.driverName}
-                      </>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
+                <td className="px-6 py-4 whitespace-nowrap align-top">
+                  {vehicle.driver || vehicle.driverName ? (
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${vehicle.latestBookingStatus && ['completed', 'finished', 'returned'].includes(vehicle.latestBookingStatus) ? 'bg-gray-50 text-gray-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <Icons.User className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-medium ${vehicle.latestBookingStatus && ['completed', 'finished', 'returned'].includes(vehicle.latestBookingStatus) ? 'text-gray-400' : 'text-gray-900'}`}>
+                          {vehicle.latestBookingStatus && ['completed', 'finished', 'returned'].includes(vehicle.latestBookingStatus) ? 'ล่าสุด: ' : ''}
+                          {vehicle.driver?.displayName || vehicle.driverName}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400 font-light italic">ว่าง</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 align-top">
+                  <div className="flex flex-col gap-1">
+                    {vehicle.latestFuel ? (
+                      <span className="text-xs text-gray-600 flex items-center gap-2">
+                        <Icons.Drop className="w-3.5 h-3.5 text-blue-500" /> {new Date(vehicle.latestFuel.timestamp?.seconds * 1000).toLocaleDateString('th-TH')}
+                      </span>
+                    ) : <span className="text-xs text-gray-400 flex items-center gap-2"><Icons.Drop className="w-3.5 h-3.5 opacity-30" /> -</span>}
+
+                    {vehicle.latestMaintenance ? (
+                      <span className="text-xs text-gray-600 flex items-center gap-2">
+                        <Icons.Wrench className="w-3.5 h-3.5 text-rose-500" /> {new Date(vehicle.latestMaintenance.amount ? Date.now() : 0).toLocaleDateString('th-TH')}
+                      </span>
+                    ) : <span className="text-xs text-gray-400 flex items-center gap-2"><Icons.Wrench className="w-3.5 h-3.5 opacity-30" /> -</span>}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-xs text-gray-500 space-y-1">
-                  {vehicle.latestFuel && (
-                    <div className="flex items-center gap-1 text-blue-600" title="เติมน้ำมันล่าสุด">
-                      <Icons.Drop className="w-3 h-3" />
-                      <span>{new Date(vehicle.latestFuel.timestamp?.seconds * 1000).toLocaleDateString('th-TH')}</span>
-                    </div>
-                  )}
-                  {vehicle.latestMaintenance && (
-                    <div className="flex items-center gap-1 text-red-600" title="ซ่อมล่าสุด">
-                      <Icons.Wrench className="w-3 h-3" />
-                      <span>{new Date(vehicle.latestMaintenance.amount ? Date.now() : 0).toLocaleDateString('th-TH')}</span> {/* Note: Timestamp logic might need adjustment based on actual data */}
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end gap-2">
-                    <ActionButton href={`/vehicles/${vehicle.id}/edit`} icon={Icons.PencilSquare} colorClass="bg-teal-50 text-teal-600 hover:bg-teal-100" label="แก้ไข" />
-                    <ActionButton href={`/vehicles/${vehicle.id}/maintenance`} icon={Icons.Wrench} colorClass="bg-indigo-50 text-indigo-600 hover:bg-indigo-100" label="ค่าใช้จ่าย" />
-                    <ActionButton href={`/vehicles/${vehicle.id}/garage`} icon={Icons.BuildingStorefront} colorClass="bg-purple-50 text-purple-600 hover:bg-purple-100" label="ส่งซ่อม" />
-                    <ActionButton href={`/vehicles/${vehicle.id}/fuel`} icon={Icons.Drop} colorClass="bg-blue-50 text-blue-600 hover:bg-blue-100" label="น้ำมัน" />
-                    <ActionButton href={`/vehicles/${vehicle.id}/fluid`} icon={Icons.Beaker} colorClass="bg-yellow-50 text-yellow-600 hover:bg-yellow-100" label="ของเหลว" />
+                <td className="px-6 py-4 align-top">
+                  <div className="flex flex-wrap gap-2 w-full max-w-[320px]">
+                    <ActionButton href={`/vehicles/${vehicle.id}/edit`} icon={Icons.PencilSquare} colorClass="bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-200" label="แก้ไข" />
+                    <ActionButton href={`/vehicles/${vehicle.id}/garage`} icon={Icons.BuildingStorefront} colorClass="bg-purple-50 hover:bg-purple-100 text-purple-600 border-purple-100" label="ส่งซ่อม" />
+                    <ActionButton href={`/vehicles/${vehicle.id}/fuel`} icon={Icons.Drop} colorClass="bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-100" label="เติมน้ำมัน" />
+                    <ActionButton href={`/vehicles/${vehicle.id}/fluid`} icon={Icons.Beaker} colorClass="bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-100" label="ของเหลว" />
+                    <ActionButton href={`/vehicles/${vehicle.id}/maintenance`} icon={Icons.Wrench} colorClass="bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-100" label="ซ่อมบำรุง" />
                   </div>
                 </td>
               </tr>
@@ -179,63 +192,59 @@ function VehicleTable({ vehicles }) {
 
 function VehicleCards({ vehicles }) {
   return (
-    <div className="md:hidden grid grid-cols-1 gap-4">
+    <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
       {vehicles.map((vehicle) => {
         const status = getStatusConfig(vehicle.status);
         return (
-          <div key={vehicle.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div key={vehicle.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 transition-shadow hover:shadow-md">
             <div className="flex gap-4">
-              <div className="h-20 w-24 flex-shrink-0 relative rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+              <div className="h-20 w-24 relative rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100">
                 {vehicle.imageUrl ? (
                   <Image src={vehicle.imageUrl} alt={vehicle.model} fill className="object-cover" unoptimized />
                 ) : (
-                  <div className="flex items-center justify-center h-full w-full text-gray-400">
+                  <div className="flex items-center justify-center h-full w-full text-gray-300">
                     <Icons.Car className="w-8 h-8" />
                   </div>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-gray-900 truncate">{vehicle.brand} {vehicle.model}</h3>
-                    <div className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                      <Icons.Tag className="w-3 h-3" />
-                      {vehicle.licensePlate}
-                    </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-gray-900 truncate pr-2">{vehicle.brand} {vehicle.model}</h3>
+                    <span className={`flex-shrink-0 w-2 h-2 rounded-full ${status.dot}`} title={status.label}></span>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${status.bg} ${status.text} ${status.border}`}>
-                    {status.label}
-                  </span>
+                  <div className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block mt-1">
+                    {vehicle.licensePlate}
+                  </div>
                 </div>
 
-                <div className="mt-2 text-xs text-gray-600 flex items-center gap-1">
-                  <Icons.User className="w-3 h-3 text-gray-400" />
-                  <span className="truncate">{vehicle.driver?.displayName || vehicle.driverName || 'ไม่มีผู้ขับขี่'}</span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  {vehicle.driver || vehicle.driverName ? (
+                    <>
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${vehicle.latestBookingStatus && ['completed', 'finished', 'returned'].includes(vehicle.latestBookingStatus) ? 'bg-gray-50 text-gray-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <Icons.User className="w-2.5 h-2.5" />
+                      </div>
+                      <span className={`text-xs truncate max-w-[120px] ${vehicle.latestBookingStatus && ['completed', 'finished', 'returned'].includes(vehicle.latestBookingStatus) ? 'text-gray-400' : 'text-gray-900 font-medium'}`}>
+                        {vehicle.latestBookingStatus && ['completed', 'finished', 'returned'].includes(vehicle.latestBookingStatus) ? 'ล่าสุด: ' : ''}
+                        {vehicle.driver?.displayName || vehicle.driverName}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-emerald-600 font-medium">ว่างพร้อมใช้</span>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-gray-50 grid grid-cols-5 gap-2">
-              <Link href={`/vehicles/${vehicle.id}/edit`} className="flex flex-col items-center justify-center p-2 rounded bg-gray-50 text-gray-600 hover:bg-gray-100">
-                <Icons.PencilSquare className="w-4 h-4" />
-                <span className="text-[10px] mt-1">แก้ไข</span>
-              </Link>
-              <Link href={`/vehicles/${vehicle.id}/maintenance`} className="flex flex-col items-center justify-center p-2 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100">
-                <Icons.Wrench className="w-4 h-4" />
-                <span className="text-[10px] mt-1">ซ่อม</span>
-              </Link>
-              <Link href={`/vehicles/${vehicle.id}/garage`} className="flex flex-col items-center justify-center p-2 rounded bg-purple-50 text-purple-600 hover:bg-purple-100">
-                <Icons.BuildingStorefront className="w-4 h-4" />
-                <span className="text-[10px] mt-1">อู่</span>
-              </Link>
-              <Link href={`/vehicles/${vehicle.id}/fuel`} className="flex flex-col items-center justify-center p-2 rounded bg-blue-50 text-blue-600 hover:bg-blue-100">
-                <Icons.Drop className="w-4 h-4" />
-                <span className="text-[10px] mt-1">น้ำมัน</span>
-              </Link>
-              <Link href={`/vehicles/${vehicle.id}/fluid`} className="flex flex-col items-center justify-center p-2 rounded bg-yellow-50 text-yellow-600 hover:bg-yellow-100">
-                <Icons.Beaker className="w-4 h-4" />
-                <span className="text-[10px] mt-1">ของเหลว</span>
-              </Link>
+            <div className="mt-4 pt-4 border-t border-gray-50">
+              <div className="flex items-center justify-between gap-2">
+                <ActionButton href={`/vehicles/${vehicle.id}/edit`} icon={Icons.PencilSquare} colorClass="bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700" label="แก้ไข" />
+                <div className="h-4 w-px bg-gray-200"></div>
+                <ActionButton href={`/vehicles/${vehicle.id}/garage`} icon={Icons.BuildingStorefront} colorClass="bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700" label="อู่" />
+                <ActionButton href={`/vehicles/${vehicle.id}/fuel`} icon={Icons.Drop} colorClass="bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700" label="น้ำมัน" />
+                <ActionButton href={`/vehicles/${vehicle.id}/fluid`} icon={Icons.Beaker} colorClass="bg-orange-50 text-orange-600 hover:bg-orange-100 hover:text-orange-700" label="ของเหลว" />
+                <ActionButton href={`/vehicles/${vehicle.id}/maintenance`} icon={Icons.Wrench} colorClass="bg-red-50 text-rose-600 hover:bg-red-100 hover:text-rose-700" label="ซ่อม" />
+              </div>
             </div>
           </div>
         );
@@ -272,10 +281,16 @@ export default function VehiclesPage() {
             const fr = await import('firebase/firestore');
             const { collection: col, query: qfn, where, orderBy, limit, getDocs } = fr;
             const bookingsRef = col(db, 'bookings');
-            const bq = qfn(bookingsRef, where('vehicleId', '==', v.id), where('status', 'in', ['approved', 'in_use', 'on_trip']), orderBy('createdAt', 'desc'), limit(1));
+            // Fetch latest booking regardless of status (active or history) to show "Latest User"
+            // We filter by status to exclude cancelled/rejected if possible, 
+            // but for "User column will show latest user", we usually mean valid usage.
+            // Firestore 'in' limit is 10.
+            const bq = qfn(bookingsRef, where('vehicleId', '==', v.id), where('status', 'in', ['approved', 'in_use', 'on_trip', 'completed', 'finished', 'returned']), orderBy('createdAt', 'desc'), limit(1));
             const bSnap = await getDocs(bq);
             if (!bSnap.empty) {
               const bd = bSnap.docs[0].data();
+              v.latestBookingStatus = bd.status; // Store status to check if active or past
+
               if (bd.driverId) {
                 try {
                   const { doc: docFn, getDoc: getDocFn } = await import('firebase/firestore');
