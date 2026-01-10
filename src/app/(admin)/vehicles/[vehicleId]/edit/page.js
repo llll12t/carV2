@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from 'next/image';
 import { useRouter, useParams } from "next/navigation";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { imageToBase64 } from "@/lib/imageUtils";
 
 // --- Icons ---
 const Icons = {
@@ -172,10 +172,9 @@ export default function EditVehiclePage() {
     setMessage("");
     try {
       let imageUrl = form.imageUrl;
+      // ถ้าเป็นไฟล์ ให้แปลงเป็น base64
       if (imageFile) {
-        const storageRef = ref(storage, `vehicle_images/${imageFile.name}_${Date.now()}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        imageUrl = await imageToBase64(imageFile, { maxWidth: 600, maxHeight: 400, quality: 0.7 });
       }
       const docRef = doc(db, "vehicles", vehicleId);
       await updateDoc(docRef, {
@@ -223,16 +222,7 @@ export default function EditVehiclePage() {
     if (!ok) return;
     setDeleting(true);
     try {
-      try {
-        const imageUrl = form.imageUrl;
-        if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-          const imageRef = ref(storage, imageUrl);
-          await deleteObject(imageRef);
-        }
-      } catch (_) {
-        // ignore image deletion errors
-      }
-
+      // base64 เก็บใน Firestore โดยตรง ลบ document ก็ลบรูปไปด้วย
       await deleteDoc(doc(db, 'vehicles', vehicleId));
       setMessage('ลบรถสำเร็จ');
       setTimeout(() => router.push('/vehicles'), 800);

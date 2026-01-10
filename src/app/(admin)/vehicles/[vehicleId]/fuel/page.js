@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import AddFuelLogForm from '@/components/admin/AddFuelLogForm';
 import Image from 'next/image';
+import AlertToast from '@/components/ui/AlertToast';
 
 function FuelRecord({ record, onSelect, isSelected }) {
     const formatDateTime = (timestamp) => {
@@ -96,7 +97,13 @@ export default function FuelPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemToDelete, setItemToDelete] = useState(null);
-    
+
+    // Alert State
+    const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+    const showAlert = (message, type = 'success') => {
+        setAlertState({ show: true, message, type });
+    };
+
     // Pagination and Filter states
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -192,35 +199,35 @@ export default function FuelPage() {
         // Search term (search in note, mileage, userId)
         if (searchTerm) {
             const search = searchTerm.toLowerCase();
-            const matchesSearch = 
+            const matchesSearch =
                 (record.note?.toLowerCase().includes(search)) ||
                 (record.mileage?.toString().includes(search)) ||
                 (record.userId?.toLowerCase().includes(search));
-            
+
             if (!matchesSearch) return false;
         }
-        
+
         // Filter by source
         if (filterSource && record.source !== filterSource) {
             return false;
         }
-        
+
         // Filter by date range
         if (filterDateFrom || filterDateTo) {
             const recordDate = record.date?.seconds ? new Date(record.date.seconds * 1000) : new Date(record.date);
-            
+
             if (filterDateFrom) {
                 const fromDate = new Date(filterDateFrom);
                 if (recordDate < fromDate) return false;
             }
-            
+
             if (filterDateTo) {
                 const toDate = new Date(filterDateTo);
                 toDate.setHours(23, 59, 59, 999); // End of day
                 if (recordDate > toDate) return false;
             }
         }
-        
+
         return true;
     });
 
@@ -234,7 +241,7 @@ export default function FuelPage() {
     const getPageNumbers = () => {
         const pages = [];
         const maxPagesToShow = 3;
-        
+
         if (totalPages <= maxPagesToShow) {
             for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
@@ -248,7 +255,7 @@ export default function FuelPage() {
                 pages.push(currentPage - 1, currentPage, currentPage + 1);
             }
         }
-        
+
         return pages;
     };
 
@@ -273,7 +280,7 @@ export default function FuelPage() {
             setIsReloading(false);
         } catch (error) {
             console.error('Error deleting fuel records:', error);
-            alert('เกิดข้อผิดพลาดในการลบ');
+            showAlert('เกิดข้อผิดพลาดในการลบ', 'error');
             setIsReloading(false);
         }
     };
@@ -297,7 +304,8 @@ export default function FuelPage() {
     if (loading) return <p>Loading fuel logs...</p>;
 
     return (
-        <div>
+        <div className="relative">
+            <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
             {vehicle && (
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center space-x-4">
@@ -314,8 +322,8 @@ export default function FuelPage() {
                     </div>
                     <div className="flex gap-2">
                         {selectedItems.length > 0 && (
-                            <button 
-                                onClick={() => { setItemToDelete(null); setShowDeleteConfirm(true); }} 
+                            <button
+                                onClick={() => { setItemToDelete(null); setShowDeleteConfirm(true); }}
                                 className="px-4 py-2 font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
                             >
                                 🗑️ ลบที่เลือก ({selectedItems.length})
@@ -327,7 +335,7 @@ export default function FuelPage() {
                     </div>
                 </div>
             )}
-            
+
             {/* Search and Filters */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -347,7 +355,7 @@ export default function FuelPage() {
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-                    
+
                     {/* Source Filter */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -421,13 +429,13 @@ export default function FuelPage() {
                     </div>
                 )}
             </div>
-            
+
             <div className="space-y-4">{allFuelRecords.length > 0 && (
-                    <div className="bg-gray-100 p-4 rounded-lg grid grid-cols-2 gap-4 font-bold text-gray-800">
-                        <p>ราคารวมทั้งหมด</p>
-                        <p className="text-right">{new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(totalCost)}</p>
-                    </div>
-                )}
+                <div className="bg-gray-100 p-4 rounded-lg grid grid-cols-2 gap-4 font-bold text-gray-800">
+                    <p>ราคารวมทั้งหมด</p>
+                    <p className="text-right">{new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(totalCost)}</p>
+                </div>
+            )}
                 <div className="bg-white rounded-lg shadow overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -473,24 +481,22 @@ export default function FuelPage() {
                                 <button
                                     onClick={() => setCurrentPage(1)}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1 rounded ${
-                                        currentPage === 1
+                                    className={`px-3 py-1 rounded ${currentPage === 1
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-white text-gray-700 hover:bg-gray-100 border'
-                                    }`}
+                                        }`}
                                 >
                                     หน้าแรก
                                 </button>
-                                
+
                                 {/* Previous Button */}
                                 <button
                                     onClick={() => setCurrentPage(currentPage - 1)}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1 rounded ${
-                                        currentPage === 1
+                                    className={`px-3 py-1 rounded ${currentPage === 1
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-white text-gray-700 hover:bg-gray-100 border'
-                                    }`}
+                                        }`}
                                 >
                                     ก่อนหน้า
                                 </button>
@@ -500,11 +506,10 @@ export default function FuelPage() {
                                     <button
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
-                                        className={`px-3 py-1 rounded ${
-                                            currentPage === pageNum
+                                        className={`px-3 py-1 rounded ${currentPage === pageNum
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-white text-gray-700 hover:bg-gray-100 border'
-                                        }`}
+                                            }`}
                                     >
                                         {pageNum}
                                     </button>
@@ -514,11 +519,10 @@ export default function FuelPage() {
                                 <button
                                     onClick={() => setCurrentPage(currentPage + 1)}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-1 rounded ${
-                                        currentPage === totalPages
+                                    className={`px-3 py-1 rounded ${currentPage === totalPages
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-white text-gray-700 hover:bg-gray-100 border'
-                                    }`}
+                                        }`}
                                 >
                                     ถัดไป
                                 </button>
@@ -527,11 +531,10 @@ export default function FuelPage() {
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-1 rounded ${
-                                        currentPage === totalPages
+                                    className={`px-3 py-1 rounded ${currentPage === totalPages
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-white text-gray-700 hover:bg-gray-100 border'
-                                    }`}
+                                        }`}
                                 >
                                     หน้าสุดท้าย
                                 </button>
@@ -554,22 +557,22 @@ export default function FuelPage() {
                     <div className="bg-white rounded-lg p-6 max-w-md mx-4">
                         <h3 className="text-xl font-bold text-gray-900 mb-4">⚠️ ยืนยันการลบ</h3>
                         <p className="text-gray-700 mb-6">
-                            {itemToDelete 
-                                ? 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?' 
+                            {itemToDelete
+                                ? 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?'
                                 : `คุณแน่ใจหรือไม่ที่จะลบ ${selectedItems.length} รายการที่เลือก?`
                             }
                             <br />
                             <span className="text-red-500 font-semibold">การกระทำนี้ไม่สามารถย้อนกลับได้</span>
                         </p>
                         <div className="flex justify-end gap-4">
-                            <button 
-                                onClick={() => { setShowDeleteConfirm(false); setItemToDelete(null); }} 
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setItemToDelete(null); }}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                             >
                                 ยกเลิก
                             </button>
-                            <button 
-                                onClick={handleDeleteSelected} 
+                            <button
+                                onClick={handleDeleteSelected}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                             >
                                 ยืนยันลบ

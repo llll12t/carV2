@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import AlertToast from '@/components/ui/AlertToast';
 
 export default function VehiclesAnalysisPage() {
   const [vehicles, setVehicles] = useState([]);
@@ -22,6 +23,13 @@ export default function VehiclesAnalysisPage() {
   });
   // ช่องกำหนด threshold
   const [threshold, setThreshold] = useState(10);
+
+  // Alert State
+  const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+
+  const showAlert = (message, type = 'success') => {
+    setAlertState({ show: true, message, type });
+  };
 
   // Pagination state for fuel records
   const [currentPage, setCurrentPage] = useState(1);
@@ -268,15 +276,16 @@ export default function VehiclesAnalysisPage() {
         value: threshold,
         updatedAt: new Date()
       });
-      alert('บันทึกเกณฑ์เรียบร้อย');
+      showAlert('บันทึกเกณฑ์เรียบร้อย', 'success');
     } catch (error) {
       console.error('Error saving threshold:', error);
-      alert('ไม่สามารถบันทึกเกณฑ์ได้');
+      showAlert('ไม่สามารถบันทึกเกณฑ์ได้', 'error');
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
       <h1 className="text-2xl font-bold">วิเคราะห์การใช้รถ</h1>
 
       <div className="bg-white rounded-xl shadow p-4">

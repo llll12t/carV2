@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
+import AlertToast from '@/components/ui/AlertToast';
 
 function GarageRecord({ record, selected, onSelect, onDelete }) {
   const formatDateTime = (value) => {
@@ -18,9 +19,9 @@ function GarageRecord({ record, selected, onSelect, onDelete }) {
     return dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) +
       ' ' + dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   const formatCurrency = (number) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(number || 0);
-  
+
   const translateStatus = (s) => {
     if (!s) return '-';
     switch (s) {
@@ -80,43 +81,50 @@ function GarageRecord({ record, selected, onSelect, onDelete }) {
 }
 
 export default function VehicleGaragePage() {
-    const [selectedIds, setSelectedIds] = useState([]);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteTargetIds, setDeleteTargetIds] = useState([]);
-    const [deleting, setDeleting] = useState(false);
-    // เลือก/ยกเลิกเลือกแต่ละรายการ
-    const handleSelect = (id, checked) => {
-      setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
-    };
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetIds, setDeleteTargetIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
 
-    // ลบทีละรายการ (ปุ่มลบในแถว)
-    const handleDeleteSingle = (id) => {
-      setDeleteTargetIds([id]);
-      setShowDeleteModal(true);
-    };
+  // Alert State
+  const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+  const showAlert = (message, type = 'success') => {
+    setAlertState({ show: true, message, type });
+  };
 
-    // ลบหลายรายการ (ปุ่มลบที่หัวตาราง)
-    const handleDeleteMultiple = () => {
-      if (selectedIds.length === 0) return;
-      setDeleteTargetIds(selectedIds);
-      setShowDeleteModal(true);
-    };
+  // เลือก/ยกเลิกเลือกแต่ละรายการ
+  const handleSelect = (id, checked) => {
+    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
+  };
 
-    // ดำเนินการลบจริง
-    const confirmDelete = async () => {
-      setDeleting(true);
-      try {
-        for (const id of deleteTargetIds) {
-          await deleteDoc(doc(db, 'maintenances', id));
-        }
-        setSelectedIds([]);
-        setDeleteTargetIds([]);
-        setShowDeleteModal(false);
-      } catch (e) {
-        alert('เกิดข้อผิดพลาดในการลบ');
+  // ลบทีละรายการ (ปุ่มลบในแถว)
+  const handleDeleteSingle = (id) => {
+    setDeleteTargetIds([id]);
+    setShowDeleteModal(true);
+  };
+
+  // ลบหลายรายการ (ปุ่มลบที่หัวตาราง)
+  const handleDeleteMultiple = () => {
+    if (selectedIds.length === 0) return;
+    setDeleteTargetIds(selectedIds);
+    setShowDeleteModal(true);
+  };
+
+  // ดำเนินการลบจริง
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      for (const id of deleteTargetIds) {
+        await deleteDoc(doc(db, 'maintenances', id));
       }
-      setDeleting(false);
-    };
+      setSelectedIds([]);
+      setDeleteTargetIds([]);
+      setShowDeleteModal(false);
+    } catch (e) {
+      showAlert('เกิดข้อผิดพลาดในการลบ', 'error');
+    }
+    setDeleting(false);
+  };
   const params = useParams();
   const vehicleId = params?.vehicleId;
   const [vehicle, setVehicle] = useState(null);
@@ -132,9 +140,9 @@ export default function VehicleGaragePage() {
     const q = query(collection(db, 'maintenances'), where('type', '==', 'garage'), where('vehicleId', '==', vehicleId));
     const unsub = onSnapshot(q, snap => {
       const arr = snap.docs.map(d => ({ id: d.id, ...d.data(), source: 'maintenances' }));
-      arr.sort((a,b)=>{
-        const at = a.createdAt?.seconds ? a.createdAt.seconds*1000 : a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bt = b.createdAt?.seconds ? b.createdAt.seconds*1000 : b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      arr.sort((a, b) => {
+        const at = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bt = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bt - at;
       });
       setItems(arr);
@@ -163,9 +171,9 @@ export default function VehicleGaragePage() {
           collection(db, 'expenses')
         );
         const garageExps = expensesSnap.docs
-          .map(d => ({ 
-            id: d.id, 
-            ...d.data(), 
+          .map(d => ({
+            id: d.id,
+            ...d.data(),
             source: 'expenses',
             bookingData: bookingsMap[d.data().bookingId] // เก็บข้อมูล booking ไว้ด้วย
           }))
@@ -175,7 +183,7 @@ export default function VehicleGaragePage() {
             const vendor = (exp.vendor || '').toLowerCase();
             // ตรวจสอบว่ามีคำว่า "อู่" หรือ "ซ่อม" หรือ "garage" หรือ "repair"
             return note.includes('อู่') || note.includes('ซ่อม') || note.includes('garage') || note.includes('repair') ||
-                   vendor.includes('อู่') || vendor.includes('garage');
+              vendor.includes('อู่') || vendor.includes('garage');
           });
 
         setGarageExpenses(garageExps);
@@ -214,14 +222,14 @@ export default function VehicleGaragePage() {
       };
     })
   ].sort((a, b) => {
-    const at = a.createdAt?.seconds ? a.createdAt.seconds*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-    const bt = b.createdAt?.seconds ? b.createdAt.seconds*1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+    const at = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+    const bt = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
     return bt - at;
   });
 
   if (!vehicleId) return <p className="p-6">ไม่พบรหัสรถ</p>;
   if (loading) return <p>Loading garage logs...</p>;
-  
+
   // compute total maintenance cost for this vehicle (use finalCost when present, fallback to cost)
   const totalCost = allItems.reduce((sum, it) => {
     const c = Number(it.finalCost ?? it.cost ?? 0) || 0;
@@ -229,7 +237,8 @@ export default function VehicleGaragePage() {
   }, 0);
 
   return (
-    <div>
+    <div className="relative">
+      <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
       {vehicle && (
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center space-x-4">

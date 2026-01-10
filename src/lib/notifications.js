@@ -1,6 +1,6 @@
 import admin from '@/lib/firebaseAdmin';
 import fetch from 'node-fetch';
-import { bookingCreatedFlex, vehicleSentFlex, vehicleBorrowedFlex, vehicleReturnedFlex } from './lineFlexMessages';
+import { bookingCreatedFlex, vehicleSentFlex, vehicleBorrowedFlex, vehicleReturnedFlex, bookingApprovedFlex, bookingRejectedFlex, adminApprovalRequestFlex } from './lineFlexMessages';
 
 const db = admin.firestore();
 const LINE_PUSH_ENDPOINT = 'https://api.line.me/v2/bot/message/push';
@@ -36,6 +36,10 @@ function normalizeBooking(b) {
     endTime: b.endTime || null,
     destination: b.destination || null,
     purpose: b.purpose || null,
+    // extra info
+    requestTime: b.requestTime || null, // for pending request
+    adminNote: b.adminNote || null,
+
     totalDistance: b.totalDistance !== undefined ? b.totalDistance : null,
     // mileage and expenses (may be attached when server fetched full booking)
     startMileage: b.startMileage || null,
@@ -129,29 +133,38 @@ export async function sendNotificationsForEvent(event, booking) {
     return res;
   }
 
-  // Build templates (only booking_created and vehicle_sent)
+  // Build templates
   const templates = {
     admin: {
       booking_created: bookingCreatedFlex(b),
       vehicle_sent: vehicleSentFlex(b),
-      vehicle_borrowed: null,  // Will be set from usage data
-      vehicle_returned: null   // Will be set from usage data
+      vehicle_borrowed: null,
+      vehicle_returned: null,
+      booking_approved: bookingApprovedFlex(b),
+      booking_rejected: bookingRejectedFlex(b),
+      admin_approval_request: adminApprovalRequestFlex(b)
     },
     driver: {
       booking_created: bookingCreatedFlex(b),
       vehicle_sent: vehicleSentFlex(b),
       vehicle_borrowed: null,
-      vehicle_returned: null
+      vehicle_returned: null,
+      booking_approved: bookingApprovedFlex(b),
+      booking_rejected: bookingRejectedFlex(b),
+      admin_approval_request: null
     },
     employee: {
       booking_created: bookingCreatedFlex(b),
       vehicle_sent: vehicleSentFlex(b),
       vehicle_borrowed: null,
-      vehicle_returned: null
+      vehicle_returned: null,
+      booking_approved: bookingApprovedFlex(b),
+      booking_rejected: bookingRejectedFlex(b)
     }
   };
 
   const results = { sent: [], skipped: [], errors: [] };
+  const seen = new Set();
 
   // Collect issues for optional admin alert
   const issues = [];
@@ -189,9 +202,6 @@ export async function sendNotificationsForEvent(event, booking) {
         templates.driver.vehicle_returned = vehicleReturnedFlex(usageData);
       }
 
-      // ไม่เพิ่ม recipients - จะไม่มีการส่ง Bot notification
-      // recipientDocs ยังคงว่างเปล่า
-
     } else if (event === 'booking_approved' || event === 'booking_rejected') {
       // For approval/rejection: notify admins + the requester
       const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
@@ -206,6 +216,10 @@ export async function sendNotificationsForEvent(event, booking) {
           console.warn('Failed to fetch requester user for notifications', requesterId, e);
         }
       }
+    } else if (event === 'admin_approval_request') {
+      // Notify only admins
+      const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
+      recipientDocs.push(...adminSnaps.docs);
     } else if (event === 'vehicle_sent') {
       // For vehicle_sent: notify admins + assigned driver + requester
       const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
@@ -245,7 +259,11 @@ export async function sendNotificationsForEvent(event, booking) {
   const directNotifyUserId = fullBooking?.userId;
   console.log(`🔍 Direct notification check: userId=${directNotifyUserId}, event=${event}`);
 
-  if (directNotifyUserId && (event === 'vehicle_borrowed' || event === 'vehicle_returned')) {
+  // (Optional logic for direct notification removed for brevity/safety in overwrite - sticking to main structure)
+  // ... แต่เดี๋ยวก่อน logic direct notification นั้นสำคัญสำหรับ booking_approved/rejected ที่เราเพิ่งทำไป
+  // ผมจะใส่ logic เดิมกลับมาครับ
+
+  if (directNotifyUserId && (event === 'vehicle_borrowed' || event === 'vehicle_returned' || event === 'booking_approved' || event === 'booking_rejected')) {
     console.log(`📤 Attempting direct notification to userId=${directNotifyUserId} for ${event}`);
     try {
       // userId อาจเป็น LINE ID หรือ Firestore document ID ลองทั้งสองวิธี
@@ -269,6 +287,7 @@ export async function sendNotificationsForEvent(event, booking) {
       }
 
       if (userData) {
+        seen.add(userDocId);
         const userLineId = userData?.lineId || directNotifyUserId; // fallback to directNotifyUserId if it's the LINE ID
         const userRole = userData?.role || 'driver';
 
@@ -315,7 +334,6 @@ export async function sendNotificationsForEvent(event, booking) {
   }
 
   // dedupe recipients by uid
-  const seen = new Set();
   // เพิ่ม userId ที่ส่งไปแล้วใน seen เพื่อไม่ส่งซ้ำ
   if (directNotifyUserId) seen.add(directNotifyUserId);
 
@@ -329,8 +347,10 @@ export async function sendNotificationsForEvent(event, booking) {
     if (!['admin', 'employee', 'driver'].includes(role)) continue;
     const roleSettings = (notifSettings.roles && notifSettings.roles[role]) || {};
     const enabled = typeof roleSettings[event] === 'boolean' ? roleSettings[event] : true;
+
     // Debug log per-recipient decision
     console.debug(`notif: user=${doc.id} role=${role} event=${event} enabled=${enabled} hasLineId=${!!lineId}`);
+
     if (!enabled) {
       results.skipped.push({ uid: doc.id, reason: 'setting_disabled' });
       issues.push({ uid: doc.id, reason: 'setting_disabled', role });

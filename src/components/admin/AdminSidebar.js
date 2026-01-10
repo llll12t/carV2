@@ -31,7 +31,7 @@ export default function AdminSidebar({ isOpen = false, onClose = () => { } }) {
 
   // Desktop sidebar
   const desktop = (
-  <aside className="hidden md:flex w-64 p-4 text-white bg-gradient-to-b from-[#075b50] to-[#002629] shrink-0 flex-col justify-between">
+    <aside className="hidden md:flex w-64 p-4 text-white bg-gradient-to-b from-[#075b50] to-[#002629] shrink-0 flex-col justify-between">
       <div>
         <h2 className="mb-8 text-2xl font-bold">Admin Panel</h2>
         <nav>
@@ -47,6 +47,21 @@ export default function AdminSidebar({ isOpen = false, onClose = () => { } }) {
               </Link>
             </li>
             <li className="mb-4">
+              <Link href="/vehicles/in-use" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/vehicles/in-use' ? 'bg-white/20' : ''}`}>
+                🚗 รถกำลังใช้งาน
+              </Link>
+            </li>
+            <li className="mb-4">
+              <Link href="/admin-approval/pending" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/admin-approval/pending' ? 'bg-white/20' : ''}`}>
+                ⏳ รอการอนุมัติ
+              </Link>
+            </li>
+            <li className="mb-4">
+              <Link href="/vehicles/orphaned" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/vehicles/orphaned' ? 'bg-white/20' : ''}`}>
+                ⚠️ ตรวจสอบการลืมคืน
+              </Link>
+            </li>
+            <li className="mb-4">
               <Link href="/maintenance" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/maintenance' ? 'bg-white/20' : ''}`} aria-current={pathname === '/maintenance' ? 'page' : undefined}>
                 ส่งซ่อม
               </Link>
@@ -56,9 +71,9 @@ export default function AdminSidebar({ isOpen = false, onClose = () => { } }) {
                 วิเคราะห์การใช้งานรถ
               </Link>
             </li>
-                <li className="mb-4">
+            <li className="mb-4">
               <Link href="/trip-history" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/trip-history' ? 'bg-white/20' : ''}`} aria-current={pathname === '/trip-history' ? 'page' : undefined}>
-                ประวัติการ 
+                ประวัติการ
               </Link>
             </li>
             <li className="mb-4">
@@ -88,7 +103,7 @@ export default function AdminSidebar({ isOpen = false, onClose = () => { } }) {
         onClick={onClose}
       />
 
-  <aside className={`fixed left-0 top-0 w-64 h-[100vh] p-4 bg-gradient-to-b from-[#075b50] to-[#002629] text-white transform transition-transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed left-0 top-0 w-64 h-[100vh] p-4 bg-gradient-to-b from-[#075b50] to-[#002629] text-white transform transition-transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Admin Panel</h2>
           <button onClick={onClose} aria-label="Close menu" className="p-2 rounded bg-white/10">
@@ -111,6 +126,21 @@ export default function AdminSidebar({ isOpen = false, onClose = () => { } }) {
               </Link>
             </li>
             <li className="mb-4">
+              <Link href="/vehicles/in-use" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/vehicles/in-use' ? 'bg-white/20' : ''}`} onClick={onClose}>
+                🚗 รถกำลังใช้งาน
+              </Link>
+            </li>
+            <li className="mb-4">
+              <Link href="/vehicles/pending" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/vehicles/pending' ? 'bg-white/20' : ''}`} onClick={onClose}>
+                ⏳ รอการอนุมัติ
+              </Link>
+            </li>
+            <li className="mb-4">
+              <Link href="/vehicles/orphaned" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/vehicles/orphaned' ? 'bg-white/20' : ''}`} onClick={onClose}>
+                ⚠️ ตรวจสอบการลืมคืน
+              </Link>
+            </li>
+            <li className="mb-4">
               <Link href="/maintenance" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/maintenance' ? 'bg-white/20' : ''}`} onClick={onClose}>
                 ส่งซ่อม
               </Link>
@@ -122,7 +152,7 @@ export default function AdminSidebar({ isOpen = false, onClose = () => { } }) {
             </li>
             <li className="mb-4">
               <Link href="/trip-history" className={`block p-2 rounded hover:bg-white/20 ${pathname === '/trip-history' ? 'bg-white/20' : ''}`} aria-current={pathname === '/vehicles-analysis' ? 'page' : undefined}>
-               ประวัติ 
+                ประวัติ
               </Link>
             </li>
             <li className="mb-4">

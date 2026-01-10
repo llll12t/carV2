@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
@@ -19,33 +19,45 @@ function LoginPageContent() {
   const { userProfile, loading: authLoading, logout } = useAuth();
 
   useEffect(() => {
+    console.log('[Login Page] Auth state changed:', { authLoading, userProfile: userProfile ? { role: userProfile.role, uid: userProfile.uid } : null });
+
     if (!authLoading && userProfile) {
+      console.log('[Login Page] User authenticated. Role:', userProfile.role);
+
       if (userProfile.role === 'admin' || userProfile.role === 'employee') {
-        router.replace('/dashboard');
+        console.log('[Login Page] Redirecting to dashboard (Hard Reload)...');
+        window.location.href = '/dashboard';
       } else {
         // Non-admin trying to access - show access denied
+        console.log('[Login Page] Access denied for role:', userProfile.role);
         setAccessDenied(true);
         setDeniedRole(userProfile.role || 'driver');
       }
     }
-  }, [userProfile, authLoading, router]);
+  }, [userProfile, authLoading]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    console.log('[Login] Starting email/password login for:', email);
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/dashboard');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('[Login] ✅ Firebase auth successful. UID:', userCredential.user.uid);
+      console.log('[Login] Waiting for AuthContext to update userProfile and trigger redirect via useEffect...');
+      // Don't navigate here - let useEffect handle it when userProfile is loaded
     } catch (err) {
+      console.error('[Login] ❌ Login failed:', err);
       if (err.code === 'auth/invalid-credential') {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       } else {
         setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
       }
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only set loading false on error
     }
+    // Note: Don't set loading to false on success - keep it true until redirect happens
   };
 
   const handleLineLogin = async () => {
@@ -129,7 +141,8 @@ function LoginPageContent() {
 
       // Sign in with custom token
       await signInWithCustomToken(auth, data.customToken);
-      router.push('/dashboard');
+      console.log('[LINE Login] ✅ Signed in successfully. Waiting for redirect via useEffect...');
+      // Don't navigate here - let useEffect handle it when userProfile is loaded
 
     } catch (err) {
       console.error('LINE login error:', err);
@@ -142,9 +155,9 @@ function LoginPageContent() {
       } else {
         setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE');
       }
-    } finally {
-      setLineLoading(false);
+      setLineLoading(false); // Only set loading false on error
     }
+    // Note: Don't set lineLoading to false on success - keep it true until redirect happens
   };
 
   const handleLogoutAndRetry = async () => {
@@ -215,6 +228,7 @@ function LoginPageContent() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="example@company.com"
+              autoComplete="email"
               className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white transition"
             />
           </div>
@@ -230,6 +244,7 @@ function LoginPageContent() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
+              autoComplete="current-password"
               className="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-gray-50 focus:bg-white transition"
             />
           </div>
@@ -297,11 +312,5 @@ function LoginPageContent() {
   );
 }
 
-// Wrap with AuthProvider
-export default function LoginPage() {
-  return (
-    <AuthProvider>
-      <LoginPageContent />
-    </AuthProvider>
-  );
-}
+// Export directly - AuthProvider is in root layout
+export default LoginPageContent;

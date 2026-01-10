@@ -15,6 +15,7 @@ export default function MyVehiclePage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('vehicle');
     const [activeUsage, setActiveUsage] = useState(null);
+    const [pendingUsage, setPendingUsage] = useState(null); // สถานะรอการอนุมัติ
     const [vehicle, setVehicle] = useState(null);
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +32,7 @@ export default function MyVehiclePage() {
         }
 
         let unsubUsage = null;
+        let unsubPending = null;
         let unsubVehicle = null;
         let unsubExpenses = null;
 
@@ -101,19 +103,57 @@ export default function MyVehiclePage() {
                 setActiveUsage(null);
                 setVehicle(null);
                 setExpenses([]);
-                setLoading(false);
             }
         }, (error) => {
             console.error("Error fetching active usage:", error);
+        });
+
+        // 4. Realtime Listener สำหรับ Pending Usage (รอการอนุมัติ)
+        const pendingQuery = query(
+            collection(db, 'vehicle-usage'),
+            where('userId', '==', userId),
+            where('status', '==', 'pending'),
+            limit(1)
+        );
+
+        unsubPending = onSnapshot(pendingQuery, (snapshot) => {
+            if (!snapshot.empty) {
+                const pendingDoc = snapshot.docs[0];
+                const pendingData = { id: pendingDoc.id, ...pendingDoc.data() };
+
+                if (pendingData.requestTime?.toDate) {
+                    pendingData.requestTime = pendingData.requestTime.toDate().toISOString();
+                }
+
+                setPendingUsage(pendingData);
+                setLoading(false);
+
+                // ดึงข้อมูลรถสำหรับ pending ด้วย
+                if (pendingData.vehicleId && !vehicle) {
+                    const vehicleRef = doc(db, "vehicles", pendingData.vehicleId);
+                    onSnapshot(vehicleRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setVehicle({ id: docSnap.id, ...docSnap.data() });
+                        }
+                    });
+                }
+            } else {
+                setPendingUsage(null);
+            }
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching pending usage:", error);
             setLoading(false);
         });
 
         return () => {
             if (unsubUsage) unsubUsage();
+            if (unsubPending) unsubPending();
             if (unsubVehicle) unsubVehicle();
             if (unsubExpenses) unsubExpenses();
         };
     }, [user]);
+
 
     const handleReturnVehicle = async () => {
         if (!activeUsage) {
@@ -320,6 +360,110 @@ export default function MyVehiclePage() {
                         animation: loading-bar 1.5s ease-in-out infinite;
                     }
                 `}</style>
+            </div>
+        );
+    }
+
+    // แสดง UI สำหรับ Pending Usage (รอการอนุมัติ)
+    if (pendingUsage && !activeUsage) {
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <MainHeader userProfile={user} activeTab={activeTab} setActiveTab={setActiveTab} />
+                <div className="px-4 py-2 -mt-8">
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div className="text-white">
+                                    <div className="font-bold text-lg">รอการอนุมัติ</div>
+                                    <div className="text-white/80 text-sm">คำขอใช้รถกำลังรอแอดมินอนุมัติ</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Vehicle Info */}
+                        <div className="p-4">
+                            <div className="flex items-center gap-4 mb-4">
+                                {getImageUrl(vehicle) && (
+                                    <Image
+                                        src={getImageUrl(vehicle)}
+                                        alt={vehicle?.licensePlate || 'รถ'}
+                                        width={80}
+                                        height={80}
+                                        className="rounded-lg object-cover"
+                                        unoptimized
+                                    />
+                                )}
+                                <div>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                        {vehicle?.licensePlate || pendingUsage.vehicleLicensePlate}
+                                    </div>
+                                    <div className="text-gray-500">
+                                        {vehicle?.brand} {vehicle?.model}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Request Details */}
+                            <div className="space-y-3 border-t border-gray-100 pt-4">
+                                {pendingUsage.destination && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        </svg>
+                                        <span className="text-gray-600">จุดหมาย: {pendingUsage.destination}</span>
+                                    </div>
+                                )}
+                                {pendingUsage.purpose && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span className="text-gray-600">วัตถุประสงค์: {pendingUsage.purpose}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 text-sm">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-gray-600">
+                                        ขอเมื่อ: {pendingUsage.requestTime ? new Date(pendingUsage.requestTime).toLocaleString('th-TH') : '-'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Waiting Animation */}
+                        <div className="bg-amber-50 p-4 border-t border-amber-100">
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="flex gap-1">
+                                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                </div>
+                                <span className="text-amber-700 font-medium">กำลังรอแอดมินอนุมัติ...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                        <div className="flex gap-3">
+                            <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div className="text-sm text-blue-700">
+                                <p className="font-medium mb-1">คำขอของคุณอยู่ระหว่างรอการอนุมัติ</p>
+                                <p>เมื่อแอดมินอนุมัติแล้ว คุณจะสามารถเริ่มใช้รถได้ทันที</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

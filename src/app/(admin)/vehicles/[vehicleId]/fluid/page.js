@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Image from 'next/image';
 import AddFluidLogForm from '@/components/admin/AddFluidLogForm';
+import AlertToast from '@/components/ui/AlertToast';
 
 export default function FluidHistoryPage() {
     const { vehicleId } = useParams();
@@ -16,6 +17,12 @@ export default function FluidHistoryPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemToDelete, setItemToDelete] = useState(null);
+
+    // Alert State
+    const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+    const showAlert = (message, type = 'success') => {
+        setAlertState({ show: true, message, type });
+    };
 
     useEffect(() => {
         if (!vehicleId) return;
@@ -64,7 +71,7 @@ export default function FluidHistoryPage() {
                 ' ' + dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         };
         const formatCurrency = (number) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(number);
-        
+
         // แสดง badge แหล่งที่มา
         const sourceBadge = record.source === 'admin' ? (
             <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">บันทึกจากพนักงาน</span>
@@ -128,8 +135,8 @@ export default function FluidHistoryPage() {
     const totalCost = fluidLogs.reduce((sum, rec) => sum + (rec.amount || 0), 0);
 
     // หาเลขไมล์ล่าสุดที่เปลี่ยนของเหลว
-    const lastMileage = fluidLogs.length > 0 && fluidLogs.some(r => r.mileage) 
-        ? Math.max(...fluidLogs.filter(r => r.mileage).map(r => r.mileage)) 
+    const lastMileage = fluidLogs.length > 0 && fluidLogs.some(r => r.mileage)
+        ? Math.max(...fluidLogs.filter(r => r.mileage).map(r => r.mileage))
         : null;
 
     const handleDeleteSelected = async () => {
@@ -138,19 +145,19 @@ export default function FluidHistoryPage() {
         try {
             const { deleteDoc, doc: docRef } = await import('firebase/firestore');
             const idsToDelete = itemToDelete ? [itemToDelete] : selectedItems;
-            
+
             // Delete selected items
-            const deletePromises = idsToDelete.map(id => 
+            const deletePromises = idsToDelete.map(id =>
                 deleteDoc(docRef(db, 'expenses', id))
             );
             await Promise.all(deletePromises);
-            
+
             setSelectedItems([]);
             setItemToDelete(null);
             setIsReloading(false);
         } catch (error) {
             console.error('Error deleting fluid records:', error);
-            alert('เกิดข้อผิดพลาดในการลบ');
+            showAlert('เกิดข้อผิดพลาดในการลบ', 'error');
             setIsReloading(false);
         }
     };
@@ -164,7 +171,7 @@ export default function FluidHistoryPage() {
     };
 
     const handleSelectItem = (id) => {
-        setSelectedItems(prev => 
+        setSelectedItems(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
@@ -172,7 +179,8 @@ export default function FluidHistoryPage() {
     if (loading) return <p>Loading fluid logs...</p>;
 
     return (
-        <div>
+        <div className="relative">
+            <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
             {vehicle && (
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center space-x-4">
@@ -189,8 +197,8 @@ export default function FluidHistoryPage() {
                     </div>
                     <div className="flex gap-2">
                         {selectedItems.length > 0 && (
-                            <button 
-                                onClick={() => { setItemToDelete(null); setShowDeleteConfirm(true); }} 
+                            <button
+                                onClick={() => { setItemToDelete(null); setShowDeleteConfirm(true); }}
                                 className="px-4 py-2 font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
                             >
                                 🗑️ ลบที่เลือก ({selectedItems.length})
@@ -254,22 +262,22 @@ export default function FluidHistoryPage() {
                     <div className="bg-white rounded-lg p-6 max-w-md mx-4">
                         <h3 className="text-xl font-bold text-gray-900 mb-4">⚠️ ยืนยันการลบ</h3>
                         <p className="text-gray-700 mb-6">
-                            {itemToDelete 
-                                ? 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?' 
+                            {itemToDelete
+                                ? 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?'
                                 : `คุณแน่ใจหรือไม่ที่จะลบ ${selectedItems.length} รายการที่เลือก?`
                             }
                             <br />
                             <span className="text-red-500 font-semibold">การกระทำนี้ไม่สามารถย้อนกลับได้</span>
                         </p>
                         <div className="flex justify-end gap-4">
-                            <button 
-                                onClick={() => { setShowDeleteConfirm(false); setItemToDelete(null); }} 
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setItemToDelete(null); }}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                             >
                                 ยกเลิก
                             </button>
-                            <button 
-                                onClick={handleDeleteSelected} 
+                            <button
+                                onClick={handleDeleteSelected}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                             >
                                 ยืนยันลบ

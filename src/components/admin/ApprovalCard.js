@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/imageHelpers';
+import AlertToast from '@/components/ui/AlertToast';
 
 // Modal Component
 function AssignVehicleModal({ booking, onClose, onAssign }) {
@@ -16,6 +17,12 @@ function AssignVehicleModal({ booking, onClose, onAssign }) {
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [assignOther, setAssignOther] = useState(false); // whether admin wants to pick a different driver
   const [loading, setLoading] = useState(true);
+
+  // Alert State
+  const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+  const showAlert = (message, type = 'success') => {
+    setAlertState({ show: true, message, type });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,7 +64,7 @@ function AssignVehicleModal({ booking, onClose, onAssign }) {
       // if a vehicle was preselected, hide the full list initially
       try {
         if (booking.vehicleId || booking.vehicleLicensePlate) setShowVehicleList(false);
-      } catch (e) {}
+      } catch (e) { }
 
       // Fetch available drivers
       const driverQuery = query(collection(db, "users"), where("role", "==", "driver"));
@@ -83,7 +90,7 @@ function AssignVehicleModal({ booking, onClose, onAssign }) {
         // fallback: allow selecting other
         setAssignOther(true);
       }
-      
+
       setLoading(false);
     };
     fetchData();
@@ -91,7 +98,7 @@ function AssignVehicleModal({ booking, onClose, onAssign }) {
 
   const handleAssign = () => {
     if (!selectedVehicleId || !selectedDriverId) {
-      alert("กรุณาเลือกรถและคนขับ");
+      showAlert("กรุณาเลือกรถและคนขับ", "error");
       return;
     }
     const selectedVehicle = availableVehicles.find(v => v.id === selectedVehicleId);
@@ -103,6 +110,7 @@ function AssignVehicleModal({ booking, onClose, onAssign }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+      <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl p-6 overflow-auto max-h-[85vh]">
         <h3 className="text-xl font-bold mb-4">มอบหมายรถสำหรับ Booking ID: {booking.id.substring(0, 6)}...</h3>
 
@@ -224,6 +232,12 @@ export default function ApprovalCard({ booking }) {
   const [showModal, setShowModal] = useState(false);
   const [requesterNameState, setRequesterNameState] = useState(booking.requesterName || '');
 
+  // Alert State
+  const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+  const showAlert = (message, type = 'success') => {
+    setAlertState({ show: true, message, type });
+  };
+
   // แสดงเฉพาะวันที่ (ไม่รวมเวลา)
   const formatDateOnly = (value) => {
     if (!value) return '-';
@@ -275,7 +289,7 @@ export default function ApprovalCard({ booking }) {
 
   const handleApprove = async (vehicle, driver) => {
     if (!vehicle || !driver) {
-      alert("กรุณาเลือกรถและคนขับให้ครบก่อนอนุมัติ");
+      showAlert("กรุณาเลือกรถและคนขับให้ครบก่อนอนุมัติ", "error");
       return;
     }
     try {
@@ -331,7 +345,7 @@ export default function ApprovalCard({ booking }) {
 
     } catch (error) {
       console.error("Error approving booking: ", error);
-      alert("Failed to approve booking.");
+      showAlert("Failed to approve booking.", "error");
     }
   };
 
@@ -349,7 +363,7 @@ export default function ApprovalCard({ booking }) {
             status: "available"
           });
         }
-        
+
         // ส่งการแจ้งเตือนการปฏิเสธ (จะส่งเฉพาะ Admin + คนจอง)
         try {
           await fetch('/api/notifications/send', {
@@ -375,7 +389,7 @@ export default function ApprovalCard({ booking }) {
         }
       } catch (error) {
         console.error("Error rejecting booking: ", error);
-        alert("Failed to reject booking.");
+        showAlert("Failed to reject booking.", "error");
       }
     }
   };
@@ -386,16 +400,17 @@ export default function ApprovalCard({ booking }) {
       try {
         const bookingRef = doc(db, "bookings", booking.id);
         await (await import("firebase/firestore")).deleteDoc(bookingRef);
-        alert("ลบคำขอเรียบร้อยแล้ว");
+        showAlert("ลบคำขอเรียบร้อยแล้ว", "success");
       } catch (error) {
         console.error("Error deleting booking: ", error);
-        alert("Failed to delete booking.");
+        showAlert("Failed to delete booking.", "error");
       }
     }
   };
 
   return (
     <>
+      <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
       <div className="bg-white p-5 rounded-2xl shadow-md hover:shadow-lg transition">
         <div className="flex flex-col gap-6 items-center">
           {/* Admin badge */}
@@ -425,12 +440,12 @@ export default function ApprovalCard({ booking }) {
               )}
             </h3>
             <div className="text-xs text-gray-600 mb-1">สร้าง <span className="font-mono">{booking.createdAt ? new Date(booking.createdAt.seconds * 1000).toLocaleString('th-TH') : '-'}</span></div>
-            <div className="text-xs text-gray-600 mb-1">ID <span className="font-mono text-xs">{booking.id.substring(0,6)}</span></div>
+            <div className="text-xs text-gray-600 mb-1">ID <span className="font-mono text-xs">{booking.id.substring(0, 6)}</span></div>
             <div className="space-y-1 text-sm text-gray-700 mt-2">
               <div><span className="font-semibold">ต้นทาง:</span> {booking.origin || '-'}</div>
               <div><span className="font-semibold">ปลายทาง:</span> {booking.destination || '-'}</div>
-                <div><span className="font-semibold">วันที่เริ่มต้น:</span> {booking.startDateTime || booking.startCalendarDate || booking.startDate ? formatDateOnly(booking.startDateTime || booking.startCalendarDate || booking.startDate) : '-'}</div>
-                <div><span className="font-semibold">วันที่สิ้นสุด:</span> {booking.endDateTime || booking.endCalendarDate || booking.endDate ? formatDateOnly(booking.endDateTime || booking.endCalendarDate || booking.endDate) : '-'}</div>
+              <div><span className="font-semibold">วันที่เริ่มต้น:</span> {booking.startDateTime || booking.startCalendarDate || booking.startDate ? formatDateOnly(booking.startDateTime || booking.startCalendarDate || booking.startDate) : '-'}</div>
+              <div><span className="font-semibold">วันที่สิ้นสุด:</span> {booking.endDateTime || booking.endCalendarDate || booking.endDate ? formatDateOnly(booking.endDateTime || booking.endCalendarDate || booking.endDate) : '-'}</div>
               <div><span className="font-semibold">ทะเบียนรถ:</span> {booking.vehicleLicensePlate || booking.vehicleId || '-'}</div>
               <div><span className="font-semibold">วัตถุประสงค์:</span> <span className="text-gray-600">{booking.purpose || '-'}</span></div>
               {booking.notes && <div><span className="font-semibold">หมายเหตุ:</span> {booking.notes}</div>}
@@ -452,7 +467,7 @@ export default function ApprovalCard({ booking }) {
           <button
             onClick={() => {
               if (!booking || booking.issues?.length > 0) {
-                alert('ไม่สามารถอนุมัติได้ เนื่องจากข้อมูลไม่ครบหรือมีปัญหา');
+                showAlert('ไม่สามารถอนุมัติได้ เนื่องจากข้อมูลไม่ครบหรือมีปัญหา', 'error');
                 return;
               }
               setShowModal(true);
@@ -463,13 +478,13 @@ export default function ApprovalCard({ booking }) {
           </button>
         </div>
       </div>
-  {showModal && (
-    <AssignVehicleModal
-      booking={booking}
-      onClose={() => setShowModal(false)}
-      onAssign={handleApprove}
-    />
-  )}
+      {showModal && (
+        <AssignVehicleModal
+          booking={booking}
+          onClose={() => setShowModal(false)}
+          onAssign={handleApprove}
+        />
+      )}
     </>
   );
 }

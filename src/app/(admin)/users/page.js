@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, orderBy, query, doc, deleteDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
+import AlertToast from '@/components/ui/AlertToast';
 
 // Component UserCard (เหมือนเดิม)
 function UserCard({ user, onDelete }) {
@@ -71,6 +72,12 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Alert State
+  const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+  const showAlert = (message, type = 'success') => {
+    setAlertState({ show: true, message, type });
+  };
+
   useEffect(() => {
     const q = query(collection(db, "users"), orderBy("name", "asc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -90,13 +97,14 @@ export default function ManageUsersPage() {
     try {
       await deleteDoc(doc(db, "users", userId));
     } catch (err) {
-      alert("เกิดข้อผิดพลาดในการลบผู้ใช้");
+      showAlert("เกิดข้อผิดพลาดในการลบผู้ใช้", 'error');
     }
     setDeletingId(null);
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto relative">
+      <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           ผู้ใช้งานในระบบ ({users.length} คน)

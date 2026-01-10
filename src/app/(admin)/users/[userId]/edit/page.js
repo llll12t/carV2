@@ -4,9 +4,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { imageToBase64 } from "@/lib/imageUtils";
 import { auth } from '@/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
@@ -57,10 +57,9 @@ export default function EditUserPage() {
 		setSaving(true);
 		try {
 			let imageUrl = form.imageUrl;
+			// ถ้าเป็นไฟล์ ให้แปลงเป็น base64
 			if (imageFile) {
-				const storageRef = ref(storage, `users/${userId}_${Date.now()}`);
-				await uploadBytes(storageRef, imageFile);
-				imageUrl = await getDownloadURL(storageRef);
+				imageUrl = await imageToBase64(imageFile, { maxWidth: 200, maxHeight: 200, quality: 0.8 });
 			}
 			let phoneToSave = form.phone || null;
 			if (phoneToSave) {

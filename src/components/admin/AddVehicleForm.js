@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { imageToBase64 } from "@/lib/imageUtils";
 
 export default function AddVehicleForm({ onClose }) {
   const [formData, setFormData] = useState({
@@ -55,51 +55,50 @@ export default function AddVehicleForm({ onClose }) {
     setIsLoading(true);
 
     if (!formData.licensePlate || !formData.brand || !formData.model) {
-        setMessage('กรุณากรอก ทะเบียน, ยี่ห้อ, และรุ่น');
-        setIsLoading(false);
-        return;
+      setMessage('กรุณากรอก ทะเบียน, ยี่ห้อ, และรุ่น');
+      setIsLoading(false);
+      return;
     }
 
     let finalImageUrl = formData.imageUrl;
 
     try {
-        if (imageFile) {
-            setMessage('กำลังอัปโหลดรูปภาพ...');
-            const storageRef = ref(storage, `vehicle_images/${imageFile.name}_${Date.now()}`);
-            const snapshot = await uploadBytes(storageRef, imageFile);
-            finalImageUrl = await getDownloadURL(snapshot.ref);
-            setMessage('อัปโหลดรูปภาพสำเร็จ...');
-        } else if (formData.imageUrl && !imageFile) {
-            finalImageUrl = formData.imageUrl;
-        } else {
-            finalImageUrl = '';
-        }
+      if (imageFile) {
+        setMessage('กำลังแปลงรูปภาพ...');
+        // แปลงรูปภาพเป็น base64
+        finalImageUrl = await imageToBase64(imageFile, { maxWidth: 600, maxHeight: 400, quality: 0.7 });
+        setMessage('แปลงรูปภาพสำเร็จ...');
+      } else if (formData.imageUrl && !imageFile) {
+        finalImageUrl = formData.imageUrl;
+      } else {
+        finalImageUrl = '';
+      }
 
-        setMessage('กำลังบันทึกข้อมูลรถ...');
-        await addDoc(collection(db, "vehicles"), {
-            ...formData,
-            currentMileage: Number(formData.currentMileage),
-            taxDueDate: formData.taxDueDate ? new Date(formData.taxDueDate) : null,
-            insuranceExpireDate: formData.insuranceExpireDate ? new Date(formData.insuranceExpireDate) : null,
-            imageUrl: finalImageUrl,
-        });
+      setMessage('กำลังบันทึกข้อมูลรถ...');
+      await addDoc(collection(db, "vehicles"), {
+        ...formData,
+        currentMileage: Number(formData.currentMileage),
+        taxDueDate: formData.taxDueDate ? new Date(formData.taxDueDate) : null,
+        insuranceExpireDate: formData.insuranceExpireDate ? new Date(formData.insuranceExpireDate) : null,
+        imageUrl: finalImageUrl,
+      });
 
-        setMessage('เพิ่มรถสำเร็จ!');
-        setTimeout(() => {
-            onClose();
-        }, 1500);
+      setMessage('เพิ่มรถสำเร็จ!');
+      setTimeout(() => {
+        onClose();
+      }, 1500);
 
     } catch (error) {
-        console.error("Error adding vehicle: ", error);
-        setMessage('เกิดข้อผิดพลาดในการเพิ่มรถ: ' + error.message);
+      console.error("Error adding vehicle: ", error);
+      setMessage('เกิดข้อผิดพลาดในการเพิ่มรถ: ' + error.message);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div className="w-full max-w-5xl p-8 bg-white rounded-lg shadow-2xl">
+      <div className="w-full max-w-5xl p-8 bg-white rounded-lg shadow-2xl">
         <h2 className="mb-6 text-2xl font-bold">เพิ่มข้อมูลรถใหม่</h2>
         <form onSubmit={handleSubmit} className="bg-white p-4 rounded">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -108,33 +107,33 @@ export default function AddVehicleForm({ onClose }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-1 text-sm">ทะเบียน</label>
-                  <input type="text" name="licensePlate" placeholder="ทะเบียนรถ (เช่น กข 1234)" onChange={handleChange} required className="w-full p-2 border rounded"/>
+                  <input type="text" name="licensePlate" placeholder="ทะเบียนรถ (เช่น กข 1234)" onChange={handleChange} required className="w-full p-2 border rounded" />
                 </div>
                 <div>
                   <label className="block mb-1 text-sm">เลขไมล์ปัจจุบัน</label>
-                  <input type="number" name="currentMileage" placeholder="เลขไมล์ปัจจุบัน" onChange={handleChange} required className="w-full p-2 border rounded"/>
+                  <input type="number" name="currentMileage" placeholder="เลขไมล์ปัจจุบัน" onChange={handleChange} required className="w-full p-2 border rounded" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-1 text-sm">ยี่ห้อ</label>
-                  <input type="text" name="brand" placeholder="ยี่ห้อ (เช่น Toyota)" onChange={handleChange} required className="w-full p-2 border rounded"/>
+                  <input type="text" name="brand" placeholder="ยี่ห้อ (เช่น Toyota)" onChange={handleChange} required className="w-full p-2 border rounded" />
                 </div>
                 <div>
                   <label className="block mb-1 text-sm">รุ่น</label>
-                  <input type="text" name="model" placeholder="รุ่น (เช่น Hilux)" onChange={handleChange} required className="w-full p-2 border rounded"/>
+                  <input type="text" name="model" placeholder="รุ่น (เช่น Hilux)" onChange={handleChange} required className="w-full p-2 border rounded" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-1 text-sm">วันสิ้นสุดภาษี</label>
-                  <input type="date" name="taxDueDate" onChange={handleChange} className="w-full p-2 border rounded"/>
+                  <input type="date" name="taxDueDate" onChange={handleChange} className="w-full p-2 border rounded" />
                 </div>
                 <div>
                   <label className="block mb-1 text-sm">วันหมดอายุประกัน</label>
-                  <input type="date" name="insuranceExpireDate" onChange={handleChange} className="w-full p-2 border rounded"/>
+                  <input type="date" name="insuranceExpireDate" onChange={handleChange} className="w-full p-2 border rounded" />
                 </div>
               </div>
 
@@ -164,16 +163,16 @@ export default function AddVehicleForm({ onClose }) {
               <div className="w-full">
                 <label className="block mb-2 text-sm font-medium">รูปรถ</label>
                 <div className="w-full bg-gray-50 rounded-lg border p-3 flex items-center justify-center">
-                    {formData.imageUrl ? (
-                      !imageBroken ? (
-                        <img src={formData.imageUrl} alt="Vehicle" className="w-full h-44 object-cover rounded" onError={() => setImageBroken(true)} />
-                      ) : (
-                        <img src={formData.imageUrl} alt="Vehicle" className="w-full h-44 object-cover rounded" />
-                      )
+                  {formData.imageUrl ? (
+                    !imageBroken ? (
+                      <img src={formData.imageUrl} alt="Vehicle" className="w-full h-44 object-cover rounded" onError={() => setImageBroken(true)} />
                     ) : (
-                      <div className="w-full h-44 bg-gray-100 flex items-center justify-center rounded text-gray-400">ไม่มีรูป</div>
-                    )}
-                  </div>
+                      <img src={formData.imageUrl} alt="Vehicle" className="w-full h-44 object-cover rounded" />
+                    )
+                  ) : (
+                    <div className="w-full h-44 bg-gray-100 flex items-center justify-center rounded text-gray-400">ไม่มีรูป</div>
+                  )}
+                </div>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="mt-3 w-full" />
                 <div className="mt-3 flex gap-2">
                   <input value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} placeholder="วางลิงก์รูปที่นี่" className="flex-1 p-2 border rounded" />

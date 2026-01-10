@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import AddMaintenanceForm from '@/components/admin/AddMaintenanceForm';
-import { useCallback } from 'react';
 import Image from 'next/image';
+import AlertToast from '@/components/ui/AlertToast';
 
 function MaintenanceRecord({ record, onSelect, isSelected }) {
+    // ... code omitted ...
     const formatDateTime = (value) => {
         if (!value) return '-';
         let dateObj;
@@ -24,7 +25,6 @@ function MaintenanceRecord({ record, onSelect, isSelected }) {
     };
     const formatCurrency = (number) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(number ?? 0);
 
-    // compute display fields with fallbacks
     const displayDate = record.date ? formatDateTime(record.date) : (record.createdAt ? formatDateTime(record.createdAt) : '-');
     const displayMileage = record.finalMileage ?? record.odometerAtDropOff ?? record.mileage ?? null;
     const displayCost = record.finalCost ?? record.cost ?? 0;
@@ -42,7 +42,6 @@ function MaintenanceRecord({ record, onSelect, isSelected }) {
         return map[st] || 'bg-gray-100 text-gray-800';
     };
 
-    // สถานะภาษาไทย
     const statusLabel = (st) => {
         switch (st) {
             case 'pending': return 'รอดำเนินการ';
@@ -54,7 +53,6 @@ function MaintenanceRecord({ record, onSelect, isSelected }) {
         }
     };
 
-    // แสดง badge แหล่งที่มา
     let sourceBadge = null;
     if (record.source === 'admin' || record.source === 'maintenances') {
         sourceBadge = <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">บันทึกจากพนักงาน</span>;
@@ -102,6 +100,12 @@ export default function MaintenancePage() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [itemToDelete, setItemToDelete] = useState(null);
 
+    // Alert State
+    const [alertState, setAlertState] = useState({ show: false, message: '', type: 'success' });
+    const showAlert = (message, type = 'success') => {
+        setAlertState({ show: true, message, type });
+    };
+
     useEffect(() => {
         if (!vehicleId) return;
         const docRef = doc(db, "vehicles", vehicleId);
@@ -114,7 +118,6 @@ export default function MaintenancePage() {
 
     useEffect(() => {
         if (!vehicleId) return;
-        // subscribe maintenances
         const q = query(
             collection(db, "maintenances"),
             where("vehicleId", "==", vehicleId),
@@ -125,7 +128,6 @@ export default function MaintenancePage() {
             setRecords(recordsData);
         });
 
-        // subscribe expenses (type=other)
         const expQ = query(
             collection(db, 'expenses'),
             where('vehicleId', '==', vehicleId),
@@ -147,14 +149,11 @@ export default function MaintenancePage() {
         };
     }, [vehicleId]);
 
-    // รวมข้อมูลจาก maintenances และ expenses
     const allRecords = [
         ...records,
         ...maintenanceExpenses.map(exp => {
-            // ใช้ timestamp หรือ createdAt เป็นวันที่บันทึก
             let date = exp.timestamp || exp.createdAt;
             if (date && typeof date === 'string') date = new Date(date);
-            // กำหนด source ให้ถูกต้อง
             let source = exp.source;
             if (exp.source === 'admin' || exp.userId) {
                 source = 'admin';
@@ -179,15 +178,12 @@ export default function MaintenancePage() {
         return bt - at;
     });
 
-    // No receive modal on vehicle page — this page only records cost-only maintenance entries.
     const openReceiveModal = (rec) => {
-        // intentionally left blank
     };
 
     const handleReceiveSubmit = useCallback(async () => {
         if (!currentRecord) return;
         try {
-            // update maintenance with final details
             await updateDoc(doc(db, 'maintenances', currentRecord.id), {
                 maintenanceStatus: 'completed',
                 finalCost: Number(receiveData.finalCost),
@@ -196,7 +192,6 @@ export default function MaintenancePage() {
                 receivedAt: serverTimestamp(),
             });
 
-            // update vehicle
             const vehicleRef = doc(db, 'vehicles', vehicleId);
             const updateData = { status: 'available' };
             if (receiveData.finalMileage) updateData.currentMileage = Number(receiveData.finalMileage);
@@ -209,14 +204,12 @@ export default function MaintenancePage() {
         }
     }, [currentRecord, receiveData, vehicleId]);
 
-    // คำนวณราคารวมทั้งหมด
     const totalCost = allRecords.reduce((sum, rec) => sum + (rec.finalCost ?? rec.cost ?? 0), 0);
 
     if (loading) {
         return <p>Loading maintenance history...</p>;
     }
 
-    // ลบรายการที่เลือก
     const handleDeleteSelected = async () => {
         setIsClearing(true);
         setShowDeleteConfirm(false);
@@ -233,13 +226,12 @@ export default function MaintenancePage() {
                 return Promise.resolve();
             });
             await Promise.all(deletePromises);
-            // Remove deleted records from state immediately for real-time feedback
             setRecords(prev => prev.filter(r => !idsToDelete.includes(r.id)));
             setMaintenanceExpenses(prev => prev.filter(r => !idsToDelete.includes(r.id)));
             setSelectedItems([]);
             setItemToDelete(null);
         } catch (e) {
-            alert('เกิดข้อผิดพลาดในการลบประวัติ');
+            showAlert('เกิดข้อผิดพลาดในการลบประวัติ', 'error');
         }
         setIsClearing(false);
     };
@@ -260,7 +252,8 @@ export default function MaintenancePage() {
     };
 
     return (
-        <div>
+        <div className="relative">
+            <AlertToast show={alertState.show} message={alertState.message} type={alertState.type} onClose={() => setAlertState(prev => ({ ...prev, show: false }))} />
             {vehicle && (
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center space-x-4">
@@ -274,8 +267,8 @@ export default function MaintenancePage() {
                     </div>
                     <div className="flex gap-2">
                         {selectedItems.length > 0 && (
-                            <button 
-                                onClick={() => { setItemToDelete(null); setShowDeleteConfirm(true); }} 
+                            <button
+                                onClick={() => { setItemToDelete(null); setShowDeleteConfirm(true); }}
                                 className="px-6 py-3 font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md transition-all hover:shadow-lg"
                             >
                                 🗑️ ลบที่เลือก ({selectedItems.length})
@@ -293,8 +286,8 @@ export default function MaintenancePage() {
                     <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
                         <h2 className="text-xl font-bold mb-4 text-red-700">ยืนยันการลบ</h2>
                         <p className="mb-6">
-                            {itemToDelete 
-                                ? 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?' 
+                            {itemToDelete
+                                ? 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?'
                                 : `คุณแน่ใจหรือไม่ที่จะลบ ${selectedItems.length} รายการที่เลือก?`}
                             <br />
                             <span className="text-red-500 font-semibold">การลบนี้ไม่สามารถย้อนกลับได้</span>

@@ -1,6 +1,7 @@
-// API: เริ่มใช้งานรถ
+// API: เริ่มใช้งานรถ (รองรับระบบอนุมัติ)
 import { NextResponse } from 'next/server';
 import admin from '@/lib/firebaseAdmin';
+import { sendNotificationsForEvent } from '@/lib/notifications';
 
 export async function POST(request) {
   try {
@@ -15,8 +16,10 @@ export async function POST(request) {
       );
     }
 
+    const db = admin.firestore();
+
     // Check if vehicle is available
-    const vehicleRef = admin.firestore().collection('vehicles').doc(vehicleId);
+    const vehicleRef = db.collection('vehicles').doc(vehicleId);
     const vehicleDoc = await vehicleRef.get();
 
     if (!vehicleDoc.exists) {
@@ -31,44 +34,80 @@ export async function POST(request) {
       );
     }
 
+    // ตรวจสอบ setting ว่าต้องมีการอนุมัติหรือไม่
+    let approvalRequired = false;
+    try {
+      // อ่านจาก appConfig/notifications ซึ่งเป็นที่เก็บ settings ของระบบ
+      const settingsDoc = await db.collection('appConfig').doc('notifications').get();
+      if (settingsDoc.exists) {
+        approvalRequired = settingsDoc.data().approvalRequired || false;
+      }
+    } catch (e) {
+      console.warn('Could not fetch approval setting:', e);
+    }
+
+
+    // กำหนดสถานะเริ่มต้น
+    const initialStatus = approvalRequired ? 'pending' : 'active';
+
     // Create vehicle-usage record
     const usageData = {
       vehicleId,
       vehicleLicensePlate: vehicleLicensePlate || vehicleData.licensePlate,
       userId,
       userName: userName || 'ไม่ระบุชื่อ',
-      startTime: new Date(),
+      startTime: approvalRequired ? null : new Date(), // ถ้ารออนุมัติ ยังไม่เริ่มนับเวลา
+      requestTime: new Date(), // เวลาที่ขอใช้รถ
       endTime: null,
       startMileage: startMileage !== undefined ? Number(startMileage) : null,
       endMileage: null,
       destination: destination || '',
       purpose: purpose || '',
-      status: 'active',
+      status: initialStatus,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const usageRef = await admin.firestore().collection('vehicle-usage').add(usageData);
+    const usageRef = await db.collection('vehicle-usage').add(usageData);
 
-    // Update vehicle status to 'in-use'
-    const updateData = {
-      status: 'in-use',
-      currentUserId: userId,
-      currentUsageId: usageRef.id,
-      updatedAt: new Date(),
-    };
-    if (startMileage !== undefined) {
-      updateData.currentMileage = Number(startMileage);
+    // ถ้าไม่ต้องอนุมัติ (เริ่มใช้ได้เลย) -> update vehicle status
+    if (!approvalRequired) {
+      const updateData = {
+        status: 'in-use',
+        currentUserId: userId,
+        currentUsageId: usageRef.id,
+        updatedAt: new Date(),
+      };
+      if (startMileage !== undefined) {
+        updateData.currentMileage = Number(startMileage);
+      }
+      await vehicleRef.update(updateData);
+    } else {
+      // ถ้าต้องอนุมัติ -> mark vehicle as pending
+      await vehicleRef.update({
+        status: 'pending',
+        pendingUsageId: usageRef.id,
+        updatedAt: new Date(),
+      });
+
+      // ส่งแจ้งเตือนหา Admin ว่ามีคำขอใหม่
+      try {
+        await sendNotificationsForEvent('admin_approval_request', {
+          id: usageRef.id,
+          ...usageData
+        });
+      } catch (e) {
+        console.error('Failed to notify admins of new request:', e);
+      }
     }
-    await vehicleRef.update(updateData);
-
-    // NOTE: Notification ถูกส่งจาก client ผ่าน liff.sendMessages() แล้ว
-    // ไม่ต้องส่งจาก server อีก เพื่อป้องกันการแจ้งเตือนซ้ำ
 
     return NextResponse.json({
       success: true,
       usageId: usageRef.id,
-      message: 'เริ่มใช้งานรถสำเร็จ',
+      approvalRequired,
+      message: approvalRequired
+        ? 'ส่งคำขอใช้รถสำเร็จ กรุณารอการอนุมัติจากแอดมิน'
+        : 'เริ่มใช้งานรถสำเร็จ',
     });
   } catch (error) {
     console.error('Error starting vehicle usage:', error);

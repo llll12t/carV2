@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { imageToBase64 } from "@/lib/imageUtils";
 
 // --- Icons ---
 const Icons = {
@@ -114,10 +114,9 @@ export default function AddVehiclePage() {
     setLoading(true);
     try {
       let imageUrl = form.imageUrl;
+      // ถ้าเป็นไฟล์ ให้แปลงเป็น base64
       if (imageFile) {
-        const storageRef = ref(storage, `vehicle_images/${imageFile.name}_${Date.now()}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
-        imageUrl = await getDownloadURL(snapshot.ref);
+        imageUrl = await imageToBase64(imageFile, { maxWidth: 600, maxHeight: 400, quality: 0.7 });
       }
       const vehicleDoc = await addDoc(collection(db, "vehicles"), {
         brand: form.brand,

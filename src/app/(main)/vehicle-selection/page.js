@@ -89,6 +89,17 @@ export default function VehicleSelectionPage() {
         return;
       }
 
+      // ตรวจสอบว่าต้องรออนุมัติหรือไม่
+      if (result.approvalRequired) {
+        setMessage("✅ ส่งคำขอใช้รถสำเร็จ! กรุณารอการอนุมัติจากแอดมิน");
+        // หน่วงเวลา 2 วินาทีแล้วไปหน้า my-vehicle
+        setTimeout(() => {
+          router.push('/my-vehicle');
+        }, 2000);
+        setIsLoading(false);
+        return;
+      }
+
       setMessage("เริ่มใช้งานรถสำเร็จ!");
 
       // ส่งข้อความ LINE Flex Message จาก user (ตรวจสอบ settings ก่อน)
@@ -154,33 +165,30 @@ export default function VehicleSelectionPage() {
                           { type: 'text', text: 'วัตถุประสงค์', size: 'sm', color: '#888888', flex: 2 },
                           { type: 'text', text: purpose, size: 'sm', color: '#333333', flex: 3, align: 'end', wrap: true }
                         ]
-                      }] : [])
+                      }] : []),
+                      {
+                        type: 'box',
+                        layout: 'horizontal',
+                        contents: [
+                          { type: 'text', text: 'เวลา', size: 'sm', color: '#888888', flex: 2 },
+                          { type: 'text', text: now, size: 'sm', color: '#333333', flex: 3, align: 'end' }
+                        ]
+                      }
                     ]
-                  },
-                  { type: 'separator', margin: 'lg' },
-                  { type: 'text', text: now, size: 'xs', color: '#AAAAAA', margin: 'lg', align: 'end' }
-                ],
-                paddingAll: '16px'
+                  }
+                ]
               }
             }
           }]);
-          console.log('✅ LINE message sent successfully');
         }
-      } catch (lineError) {
-        console.error('Failed to send LINE message:', lineError);
-        // ไม่ block flow ถ้าส่ง LINE ไม่สำเร็จ
+      } catch (err) {
+        console.error("Error sending LINE message:", err);
       }
 
-      // Reset form
-      setSelectedVehicle("");
-      setDestination("");
-      setPurpose("");
-      setIsLoading(false);
-
-      // Navigate to my active vehicle page
+      // Redirect หลังจากสำเร็จ (กรณี active)
       setTimeout(() => {
         router.push('/my-vehicle');
-      }, 1000);
+      }, 1500);
 
     } catch (error) {
       console.error("Error starting vehicle usage:", error);
@@ -324,4 +332,3 @@ export default function VehicleSelectionPage() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useState, useEffect } from "react";
@@ -13,11 +13,22 @@ function AdminLayoutContent({ children }) {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('[AdminLayout] Effect triggered:', {
+      loading,
+      hasUserProfile: !!userProfile,
+      role: userProfile?.role,
+      uid: userProfile?.uid
+    });
+
     if (!loading && !userProfile) {
-      console.log("AdminLayout: Redirecting to / because not logged in or no profile", { loading, userProfile });
-      // not logged in / no profile -> send to main
-      router.replace("/");
+      console.log("[AdminLayout] ⚠️ No user profile found. Showing breakdown state.");
+      // STOP AUTO REDIRECT - Show UI instead to debug
+      // router.replace("/"); 
       return;
+    }
+
+    if (!loading && userProfile) {
+      console.log("[AdminLayout] ✅ User authenticated in admin layout. Role:", userProfile.role);
     }
     // Note: Role redirection removed to prevent loop. We handle unauthorized access by rendering a specific UI below.
   }, [loading, userProfile, router]);
@@ -31,7 +42,30 @@ function AdminLayoutContent({ children }) {
   }
 
   if (!userProfile) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">ไม่พบข้อมูลผู้ใช้งาน</h2>
+          <p className="text-gray-600 mb-6">
+            ระบบไม่สามารถดึงข้อมูลโปรไฟล์ของคุณได้ อาจเกิดจากปัญหาการเชื่อมต่อหรือ Session หมดอายุ
+          </p>
+          <div className="text-xs text-gray-400 bg-gray-50 p-2 rounded mb-6 text-left overflow-auto max-h-32">
+            DEBUG INFO:<br />
+            Loading: {String(loading)}<br />
+            User Profile: {String(userProfile)}
+          </div>
+          <button
+            onClick={() => router.replace('/')}
+            className="w-full py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 transition"
+          >
+            กลับไปหน้าเข้าสู่ระบบ
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Role enforcement: allow only admin and employee to access admin area
@@ -66,11 +100,7 @@ function AdminLayoutContent({ children }) {
   );
 }
 
-// Layout หลักสำหรับหน้าจัดการทั้งหมด - Wrap ด้วย AuthProvider
+// Layout หลักสำหรับหน้าจัดการทั้งหมด
 export default function AdminLayout({ children }) {
-  return (
-    <AuthProvider>
-      <AdminLayoutContent>{children}</AdminLayoutContent>
-    </AuthProvider>
-  );
+  return <AdminLayoutContent>{children}</AdminLayoutContent>;
 }

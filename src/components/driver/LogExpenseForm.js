@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db } from "@/lib/firebase";
+import { imageToBase64 } from "@/lib/imageUtils";
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 
@@ -31,20 +31,18 @@ export default function LogExpenseForm({ trip, onClose }) {
 
         let downloadURL = null;
         if (receiptFile) {
-            setMessage('กำลังอัปโหลดใบเสร็จ...');
+            setMessage('กำลังแปลงใบเสร็จ...');
             try {
-                // 1. Upload receipt image to Firebase Storage
-                const storageRef = ref(storage, `receipts/${trip.id}/${receiptFile.name}_${Date.now()}`);
-                const snapshot = await uploadBytes(storageRef, receiptFile);
-                downloadURL = await getDownloadURL(snapshot.ref);
+                // แปลงรูปใบเสร็จเป็น base64
+                downloadURL = await imageToBase64(receiptFile, { maxWidth: 600, maxHeight: 800, quality: 0.7 });
             } catch (error) {
-                console.error("Error uploading receipt:", error);
-                setMessage('เกิดข้อผิดพลาดในการอัปโหลดใบเสร็จ');
+                console.error("Error processing receipt:", error);
+                setMessage('เกิดข้อผิดพลาดในการแปลงใบเสร็จ');
                 setIsLoading(false);
                 return;
             }
         }
-        
+
         setMessage('กำลังบันทึกข้อมูล...');
 
         try {

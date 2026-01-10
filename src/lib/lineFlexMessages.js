@@ -7,12 +7,12 @@ function fmtDate(d) {
     // Firestore Timestamp-like object with toDate()
     if (d && typeof d.toDate === 'function') {
       dt = d.toDate();
-    } 
+    }
     // Firestore plain object with seconds/nanoseconds
     else if (d && typeof d.seconds === 'number') {
       const ms = (d.seconds * 1000) + Math.floor((d.nanoseconds || 0) / 1e6);
       dt = new Date(ms);
-    } 
+    }
     // numeric timestamp or ISO string
     else if (typeof d === 'number') {
       dt = d > 1e12 ? new Date(d) : new Date(d * 1000);
@@ -21,9 +21,9 @@ function fmtDate(d) {
     }
 
     if (isNaN(dt.getTime())) return String(d);
-    
+
     // [FIX] ระบุ timeZone เป็น Asia/Bangkok เพื่อให้เวลาตรงกับไทย (UTC+7)
-    return dt.toLocaleString('th-TH', { 
+    return dt.toLocaleString('th-TH', {
       timeZone: 'Asia/Bangkok',
       dateStyle: 'medium',
       timeStyle: 'short'
@@ -105,9 +105,9 @@ export function bookingCreatedFlex(booking) {
     createRow('รถ', booking.vehicleLicensePlate),
     createRow('วันที่ใช้', fmtDate(booking.startDateTime || booking.startCalendarDate || booking.startDate))
   ];
-  return { 
-    altText: 'มีการขอยืมรถใหม่', 
-    contents: createBubble('มีการขอยืมรถ', rows, '#00B900') 
+  return {
+    altText: 'มีการขอยืมรถใหม่',
+    contents: createBubble('มีการขอยืมรถ', rows, '#00B900')
   };
 }
 
@@ -118,9 +118,9 @@ export function vehicleSentFlex(booking) {
     createRow('รถ', booking.vehicleLicensePlate),
     createRow('ส่งเมื่อ', fmtDate(booking.sentAt || Date.now()))
   ];
-  return { 
-    altText: 'รถถูกส่งให้ผู้ขอแล้ว', 
-    contents: createBubble('รถถูกส่งแล้ว', rows, '#10b981') 
+  return {
+    altText: 'รถถูกส่งให้ผู้ขอแล้ว',
+    contents: createBubble('รถถูกส่งแล้ว', rows, '#10b981')
   };
 }
 
@@ -134,8 +134,8 @@ export function vehicleBorrowedFlex(usage) {
     createRow('จุดหมาย', usage.destination),
     createRow('วัตถุประสงค์', usage.purpose)
   ];
-  return { 
-    altText: 'เริ่มการใช้งานรถ', 
+  return {
+    altText: 'เริ่มการใช้งานรถ',
     contents: createBubble('เริ่มการใช้งาน', rows, '#06C755') // [FIX] เปลี่ยนเป็นสีเขียว (LINE Green)
   };
 }
@@ -152,14 +152,83 @@ export function vehicleReturnedFlex(usage) {
   if (usage.totalDistance !== null && usage.totalDistance !== undefined) {
     rows.push(createRow('ระยะทาง', `${usage.totalDistance} กม.`));
   }
-  
+
   // แสดงค่าใช้จ่ายรวมแบบไม่มี Emoji
   if (usage.totalExpenses !== null && usage.totalExpenses !== undefined && usage.totalExpenses > 0) {
     rows.push(createRow('ค่าใช้จ่ายรวม', `${usage.totalExpenses.toLocaleString()} บาท`));
   }
 
-  return { 
-    altText: 'มีการคืนรถแล้ว', 
+
+  return {
+    altText: 'มีการคืนรถแล้ว',
     contents: createBubble('คืนรถเรียบร้อย', rows, '#06C755') // [FIX] เปลี่ยนเป็นสีเขียว (LINE Green)
+  };
+}
+
+// 5. แจ้งเตือน "อนุมัติคำขอ"
+export function bookingApprovedFlex(booking) {
+  const rows = [
+    createRow('ผู้ขอ', booking.requesterName || booking.userName),
+    createRow('รถ', booking.vehicleLicensePlate),
+    createRow('สถานะ', 'อนุมัติแล้ว ✅'),
+    createRow('วันที่เริ่ม', fmtDate(booking.startTime || new Date()))
+  ];
+  if (booking.adminNote) {
+    rows.push(createRow('หมายเหตุ', booking.adminNote));
+  }
+  return {
+    altText: 'คำขอใช้รถได้รับการอนุมัติ',
+    contents: createBubble('อนุมัติคำขอ', rows, '#06C755')
+  };
+}
+
+// 6. แจ้งเตือน "ปฏิเสธคำขอ"
+export function bookingRejectedFlex(booking) {
+  const rows = [
+    createRow('ผู้ขอ', booking.requesterName || booking.userName),
+    createRow('รถ', booking.vehicleLicensePlate),
+    createRow('สถานะ', 'ปฏิเสธ ❌')
+  ];
+  if (booking.adminNote) {
+    rows.push(createRow('เหตุผล', booking.adminNote));
+  }
+  return {
+    altText: 'คำขอใช้รถถูกปฏิเสธ',
+    contents: createBubble('คำขอถูกปฏิเสธ', rows, '#EF4444') // สีแดง
+  };
+}
+
+// 7. แจ้งเตือนแอดมิน "มีคำขอใหม่รออนุมัติ"
+export function adminApprovalRequestFlex(booking) {
+  const rows = [
+    createRow('ผู้ขอ', booking.requesterName || booking.userName),
+    createRow('รถ', booking.vehicleLicensePlate),
+    createRow('เวลาขอ', fmtDate(booking.requestTime || new Date())),
+    createRow('จุดหมาย', booking.destination || '-')
+  ];
+
+  const bubble = createBubble('⚠️ มีคำขอรออนุมัติ', rows, '#F59E0B'); // สีส้ม
+
+  // เพิ่มปุ่ม Action
+  bubble.footer = {
+    type: 'box',
+    layout: 'vertical',
+    contents: [
+      {
+        type: 'button',
+        action: {
+          type: 'uri',
+          label: 'ตรวจสอบและอนุมัติ',
+          uri: `https://liff.line.me/${process.env.NEXT_PUBLIC_CONFIRM_LIFF_ID}/admin-approval/pending`
+        },
+        style: 'primary',
+        color: '#F59E0B'
+      }
+    ]
+  };
+
+  return {
+    altText: 'มีคำขอใช้รถใหม่รอการอนุมัติ',
+    contents: bubble
   };
 }

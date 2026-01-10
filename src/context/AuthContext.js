@@ -43,18 +43,19 @@ export const AuthProvider = ({ children, initialUserProfile = null }) => {
 
         // ถ้ายังไม่มี Profile ถึงค่อยไปดึงจาก Firestore
         try {
+          console.log('[AuthContext] Fetching user profile from Firestore for UID:', firebaseUser.uid);
           const userDocRef = doc(db, 'users', firebaseUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
           if (userDocSnap.exists()) {
-            console.log("User profile found via UID:", firebaseUser.uid);
+            console.log("[AuthContext] ✅ User profile found. Role:", userDocSnap.data()?.role);
             setUserProfile({ uid: userDocSnap.id, ...userDocSnap.data() });
           } else {
-            console.warn("No user profile found in Firestore for UID:", firebaseUser.uid);
+            console.warn("[AuthContext] ⚠️ No user profile found in Firestore for UID:", firebaseUser.uid);
             setUserProfile(null);
           }
         } catch (err) {
-          console.error("Error fetching user profile:", err);
+          console.error("[AuthContext] ❌ Error fetching user profile:", err);
           setUserProfile(null);
         }
 
