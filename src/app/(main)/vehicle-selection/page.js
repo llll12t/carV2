@@ -115,7 +115,7 @@ export default function VehicleSelectionPage() {
                 type: 'box',
                 layout: 'vertical',
                 contents: [
-                  { type: 'text', text: '🚗 เริ่มใช้รถสำเร็จ', weight: 'bold', size: 'md', color: '#0d9488' },
+                  { type: 'text', text: 'เริ่มใช้รถ', weight: 'bold', size: 'md', color: '#0d9488' },
                   { type: 'separator', margin: 'lg' },
                   {
                     type: 'box',

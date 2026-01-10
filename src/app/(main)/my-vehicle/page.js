@@ -169,7 +169,7 @@ export default function MyVehiclePage() {
                                 type: 'box',
                                 layout: 'vertical',
                                 contents: [
-                                    { type: 'text', text: '✅ คืนรถสำเร็จ', weight: 'bold', size: 'md', color: '#0d9488' },
+                                    { type: 'text', text: 'คืนรถสำเร็จ', weight: 'bold', size: 'md', color: '#0d9488' },
                                     { type: 'separator', margin: 'lg' },
                                     {
                                         type: 'box',
@@ -218,7 +218,7 @@ export default function MyVehiclePage() {
                             }
                         }
                     }]);
-                    console.log('✅ LINE return message sent successfully');
+                    console.log('LINE return message sent successfully');
                 }
             } catch (lineError) {
                 console.error('Failed to send LINE message:', lineError);
