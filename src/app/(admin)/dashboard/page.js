@@ -264,7 +264,10 @@ export default function AdminDashboardPage() {
             }
         });
 
-        const usageQuery = query(collection(db, "vehicle-usage"));
+        const usageQuery = query(
+            collection(db, "vehicle-usage"),
+            where("status", "==", "completed")
+        );
         const unsubTotalUsage = onSnapshot(usageQuery, (snapshot) => {
             setStats(prev => ({ ...prev, totalUsage: snapshot.size }));
         });
