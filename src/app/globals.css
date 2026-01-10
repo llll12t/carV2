@@ -30,10 +30,10 @@ body {
 
 .gradient-bg {
   background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #134e4a 100%);
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-top: 1rem;
-  padding-bottom: 2.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
 }
 
 
